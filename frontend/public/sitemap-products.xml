@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+  Sitemap for Product Pages
+  This file is auto-generated from the products database
+  Products are updated daily
+  Format: https://bluebellgifts.in/product/[product-slug]
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  
+  <!-- Example Product Entry - Replace with actual products -->
+  <!-- 
+  <url>
+    <loc>https://bluebellgifts.in/product/[product-slug]</loc>
+    <lastmod>2026-02-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://bluebellgifts.in/images/product-image.jpg</image:loc>
+      <image:title>Product Name</image:title>
+    </image:image>
+  </url>
+  -->
+  
+  <!-- Generated products will be inserted here -->
+  
+</urlset>
