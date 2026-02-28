@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { FileText, Loader2 } from "lucide-react";
-import { getSiteContent } from "../../services/firestore-service";
-import { SiteContent } from "../../types";
+import { getSiteContent } from "../../../services/firestore-service";
+import { SiteContent } from "../../../types";
 
 export function TermsAndConditionsPage() {
   const [content, setContent] = useState<SiteContent | null>(null);
@@ -41,14 +41,19 @@ export function TermsAndConditionsPage() {
               {content?.title || "Terms & Conditions"}
             </h1>
             <p className="text-sm md:text-base text-slate-600 mt-2">
-              Last updated: {content?.lastUpdated ? new Date(content.lastUpdated.seconds * 1000).toLocaleDateString() : new Date().toLocaleDateString()}
+              Last updated:{" "}
+              {content?.lastUpdated
+                ? new Date(
+                    content.lastUpdated.seconds * 1000,
+                  ).toLocaleDateString()
+                : new Date().toLocaleDateString()}
             </p>
           </div>
         </div>
 
         <div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-lg">
           {content?.content ? (
-            <div 
+            <div
               className="prose prose-blue max-w-none text-slate-600 leading-relaxed"
               dangerouslySetInnerHTML={{ __html: content.content }}
             />

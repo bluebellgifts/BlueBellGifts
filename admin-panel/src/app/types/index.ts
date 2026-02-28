@@ -126,9 +126,14 @@ export interface InventoryLog {
 }
 
 export interface SiteContent {
-  id: string; // 'about', 'contact', 'terms', 'privacy', 'refund'
+  id: string; // 'about', 'contact_page', 'terms', 'privacy', 'refund'
   title: string;
-  content: string; // HTML or Markdown
+  sections?: Array<{
+    id: string;
+    heading: string;
+    text: string;
+  }>;
+  content: string; // Legacy field for plain text or HTML
   lastUpdated: Date;
 }
 
