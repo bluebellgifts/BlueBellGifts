@@ -48,9 +48,11 @@ interface ProductVariant {
     | "type"
     | "other";
   attributes: VariantAttribute[];
-  price: number;
-  resellerPrice?: number;
-  salePrice?: number;
+  costPrice: number;
+  retailPrice: number;
+  sellingPrice: number;
+  resellerPrice: number;
+  offerPrice?: number;
   stock: number;
 }
 
@@ -74,8 +76,11 @@ interface ProductFormData {
   slug: string;
   category: string;
   description: string;
-  basePrice: number | "";
+  costPrice: number | "";
+  retailPrice: number | "";
+  sellingPrice: number | "";
   resellerPrice: number | "";
+  offerPrice: number | "";
   sku: string;
   stockQuantity: number | "";
   status: boolean;
@@ -110,8 +115,11 @@ export function AddProductForm() {
     slug: "",
     category: "",
     description: "",
-    basePrice: "",
+    costPrice: "",
+    retailPrice: "",
+    sellingPrice: "",
     resellerPrice: "",
+    offerPrice: "",
     sku: "",
     stockQuantity: "",
     status: true,
@@ -122,8 +130,11 @@ export function AddProductForm() {
         name: "",
         type: "size",
         attributes: [{ name: "", value: "" }],
-        price: 0,
+        costPrice: 0,
+        retailPrice: 0,
+        sellingPrice: 0,
         resellerPrice: 0,
+        offerPrice: 0,
         stock: 100,
       },
     ],
@@ -250,8 +261,11 @@ export function AddProductForm() {
       name: "",
       type: "size",
       attributes: [{ name: "", value: "" }],
-      price: 0,
+      costPrice: 0,
+      retailPrice: 0,
+      sellingPrice: 0,
       resellerPrice: 0,
+      offerPrice: 0,
       stock: 100,
     };
     setFormData((prev) => ({
@@ -397,7 +411,11 @@ export function AddProductForm() {
     if (!formData.name.trim()) newErrors.name = "Product name is required";
     if (!formData.category) newErrors.category = "Category is required";
     if (!formData.sku.trim()) newErrors.sku = "SKU is required";
-    if (!formData.basePrice) newErrors.basePrice = "Base price is required";
+    if (!formData.costPrice) newErrors.costPrice = "Cost price is required";
+    if (!formData.retailPrice)
+      newErrors.retailPrice = "Retail price is required";
+    if (!formData.sellingPrice)
+      newErrors.sellingPrice = "Selling price is required";
     if (!formData.resellerPrice)
       newErrors.resellerPrice = "Reseller price is required";
     if (!formData.description.trim())
@@ -430,8 +448,13 @@ export function AddProductForm() {
       // Prepare data structure
       const productData = {
         ...formData,
-        basePrice: Number(formData.basePrice),
+        costPrice: Number(formData.costPrice),
+        retailPrice: Number(formData.retailPrice),
+        sellingPrice: Number(formData.sellingPrice),
         resellerPrice: Number(formData.resellerPrice),
+        offerPrice: formData.offerPrice
+          ? Number(formData.offerPrice)
+          : undefined,
         stockQuantity: Number(formData.stockQuantity),
         shippingTamilNadu: Number(formData.shippingTamilNadu),
         shippingRestOfIndia: Number(formData.shippingRestOfIndia),
@@ -467,8 +490,11 @@ export function AddProductForm() {
         slug: "",
         category: "",
         description: "",
-        basePrice: "",
+        costPrice: "",
+        retailPrice: "",
+        sellingPrice: "",
         resellerPrice: "",
+        offerPrice: "",
         sku: "",
         stockQuantity: "",
         status: true,
@@ -479,8 +505,11 @@ export function AddProductForm() {
             name: "",
             type: "size",
             attributes: [{ name: "", value: "" }],
-            price: 0,
+            costPrice: 0,
+            retailPrice: 0,
+            sellingPrice: 0,
             resellerPrice: 0,
+            offerPrice: 0,
             stock: 100,
           },
         ],
@@ -619,23 +648,69 @@ export function AddProductForm() {
 
             <div>
               <Label className="text-gray-700 font-medium">
-                Base Price (₹) *
+                Cost Price (₹) *
               </Label>
               <Input
                 type="number"
-                value={formData.basePrice}
+                value={formData.costPrice}
                 onChange={(e) =>
                   handleInputChange(
-                    "basePrice",
+                    "costPrice",
+                    e.target.value ? Number(e.target.value) : "",
+                  )
+                }
+                placeholder="350"
+                className={`mt-2 ${errors.costPrice ? "border-red-500" : ""}`}
+              />
+              {errors.costPrice && (
+                <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" /> {errors.costPrice}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Label className="text-gray-700 font-medium">
+                Retail Price (₹) *
+              </Label>
+              <Input
+                type="number"
+                value={formData.retailPrice}
+                onChange={(e) =>
+                  handleInputChange(
+                    "retailPrice",
                     e.target.value ? Number(e.target.value) : "",
                   )
                 }
                 placeholder="449"
-                className={`mt-2 ${errors.basePrice ? "border-red-500" : ""}`}
+                className={`mt-2 ${errors.retailPrice ? "border-red-500" : ""}`}
               />
-              {errors.basePrice && (
+              {errors.retailPrice && (
                 <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" /> {errors.basePrice}
+                  <AlertCircle className="w-4 h-4" /> {errors.retailPrice}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Label className="text-gray-700 font-medium">
+                Selling Price (₹) *
+              </Label>
+              <Input
+                type="number"
+                value={formData.sellingPrice}
+                onChange={(e) =>
+                  handleInputChange(
+                    "sellingPrice",
+                    e.target.value ? Number(e.target.value) : "",
+                  )
+                }
+                placeholder="420"
+                className={`mt-2 ${errors.sellingPrice ? "border-red-500" : ""}`}
+              />
+              {errors.sellingPrice && (
+                <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" /> {errors.sellingPrice}
                 </p>
               )}
             </div>
@@ -661,6 +736,24 @@ export function AddProductForm() {
                   <AlertCircle className="w-4 h-4" /> {errors.resellerPrice}
                 </p>
               )}
+            </div>
+
+            <div>
+              <Label className="text-gray-700 font-medium">
+                Offer Price (₹)
+              </Label>
+              <Input
+                type="number"
+                value={formData.offerPrice}
+                onChange={(e) =>
+                  handleInputChange(
+                    "offerPrice",
+                    e.target.value ? Number(e.target.value) : "",
+                  )
+                }
+                placeholder="379"
+                className="mt-2"
+              />
             </div>
 
             <div>
@@ -1055,13 +1148,15 @@ export function AddProductForm() {
 
                   <div className="grid grid-cols-2 gap-2 border-t pt-3">
                     <div>
-                      <Label className="text-xs text-gray-600">Price (₹)</Label>
+                      <Label className="text-xs text-gray-600">
+                        Cost Price (₹)
+                      </Label>
                       <Input
                         type="number"
-                        value={variant.price}
+                        value={variant.costPrice}
                         onChange={(e) =>
                           updateVariant(variant.id, {
-                            price: Number(e.target.value),
+                            costPrice: Number(e.target.value),
                           })
                         }
                         className="mt-1 h-8 text-sm"
@@ -1069,33 +1164,65 @@ export function AddProductForm() {
                     </div>
                     <div>
                       <Label className="text-xs text-gray-600">
-                        Sale Price (₹)
+                        Retail Price (₹)
                       </Label>
                       <Input
                         type="number"
-                        value={variant.salePrice || ""}
+                        value={variant.retailPrice}
                         onChange={(e) =>
                           updateVariant(variant.id, {
-                            salePrice: e.target.value
-                              ? Number(e.target.value)
-                              : undefined,
+                            retailPrice: Number(e.target.value),
                           })
                         }
                         className="mt-1 h-8 text-sm"
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 border-t pt-3">
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div>
+                      <Label className="text-xs text-gray-600">
+                        Selling Price (₹)
+                      </Label>
+                      <Input
+                        type="number"
+                        value={variant.sellingPrice}
+                        onChange={(e) =>
+                          updateVariant(variant.id, {
+                            sellingPrice: Number(e.target.value),
+                          })
+                        }
+                        className="mt-1 h-8 text-sm"
+                      />
+                    </div>
                     <div>
                       <Label className="text-xs text-gray-600">
                         Reseller Price (₹)
                       </Label>
                       <Input
                         type="number"
-                        value={variant.resellerPrice || ""}
+                        value={variant.resellerPrice}
                         onChange={(e) =>
                           updateVariant(variant.id, {
                             resellerPrice: Number(e.target.value),
+                          })
+                        }
+                        className="mt-1 h-8 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div>
+                      <Label className="text-xs text-gray-600">
+                        Offer Price (₹)
+                      </Label>
+                      <Input
+                        type="number"
+                        value={variant.offerPrice ?? ""}
+                        onChange={(e) =>
+                          updateVariant(variant.id, {
+                            offerPrice: e.target.value
+                              ? Number(e.target.value)
+                              : undefined,
                           })
                         }
                         className="mt-1 h-8 text-sm"

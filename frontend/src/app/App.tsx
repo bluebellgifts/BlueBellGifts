@@ -30,15 +30,6 @@ import { useApp } from "./context/AppContext";
 // Auth Components
 import { LoginPage } from "./components/auth/LoginPage";
 
-// Policy Components
-import { PrivacyPolicyPage } from "./components/customer/policies/PrivacyPolicyPage";
-import { TermsAndConditionsPage } from "./components/customer/policies/TermsAndConditionsPage";
-import { ReturnPolicyPage } from "./components/customer/policies/ReturnPolicyPage";
-import { RefundPolicyPage } from "./components/customer/policies/RefundPolicyPage";
-import { CancellationPolicyPage } from "./components/customer/policies/CancellationPolicyPage";
-import { ShippingPolicyPage } from "./components/customer/policies/ShippingPolicyPage";
-import { FAQPage } from "./components/customer/policies/FAQPage";
-
 type Page = {
   name: string;
   params?: any;
@@ -194,17 +185,16 @@ export default function App() {
 
         {/* Static Pages */}
         {currentPage.name === "about" && <StaticPage pageId="about" />}
+        {currentPage.name === "privacy" && <StaticPage pageId="privacy" />}
+        {currentPage.name === "terms" && <StaticPage pageId="terms" />}
+        {currentPage.name === "refund" && <StaticPage pageId="refund" />}
+        {currentPage.name === "return" && <StaticPage pageId="return" />}
+        {currentPage.name === "cancellation" && (
+          <StaticPage pageId="cancellation" />
+        )}
+        {currentPage.name === "shipping" && <StaticPage pageId="shipping" />}
 
         {currentPage.name === "contact" && <ContactPage />}
-
-        {/* Policy Pages */}
-        {currentPage.name === "terms" && <TermsAndConditionsPage />}
-        {currentPage.name === "privacy" && <PrivacyPolicyPage />}
-        {currentPage.name === "refund" && <RefundPolicyPage />}
-        {currentPage.name === "return" && <ReturnPolicyPage />}
-        {currentPage.name === "cancellation" && <CancellationPolicyPage />}
-        {currentPage.name === "shipping" && <ShippingPolicyPage />}
-        {currentPage.name === "faq" && <FAQPage />}
       </main>
 
       {/* Filter Trigger Button - Only for Home and Categories */}
