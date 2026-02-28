@@ -17,7 +17,7 @@ import { AccountPage } from "./components/customer/AccountPage";
 import { TrackOrderPage } from "./components/customer/TrackOrderPage";
 import { WishlistPage } from "./components/customer/WishlistPage";
 import { ContactPage } from "./components/customer/ContactPage";
-import { StaticPage } from "./components/customer/StaticPage";
+import StaticPage from "./components/customer/StaticPage";
 import { ProfileCompletionPage } from "./components/customer/ProfileCompletionPage";
 import {
   SortAndFilter,
@@ -193,13 +193,7 @@ export default function App() {
         )}
 
         {/* Static Pages */}
-        {currentPage.name === "about" && (
-          <StaticPage
-            pageId="about"
-            defaultTitle="About Blue Bell Gifts"
-            defaultContent="<p>Welcome to Blue Bell Gifts...</p>"
-          />
-        )}
+        {currentPage.name === "about" && <StaticPage pageId="about" />}
 
         {currentPage.name === "contact" && <ContactPage />}
 
