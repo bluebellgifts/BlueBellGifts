@@ -49,6 +49,7 @@ interface ProductVariant {
     | "other";
   attributes: VariantAttribute[];
   price: number;
+  resellerPrice?: number;
   salePrice?: number;
   stock: number;
 }
@@ -74,6 +75,7 @@ interface ProductFormData {
   category: string;
   description: string;
   basePrice: number | "";
+  resellerPrice: number | "";
   sku: string;
   stockQuantity: number | "";
   status: boolean;
@@ -109,6 +111,7 @@ export function AddProductForm() {
     category: "",
     description: "",
     basePrice: "",
+    resellerPrice: "",
     sku: "",
     stockQuantity: "",
     status: true,
@@ -120,6 +123,7 @@ export function AddProductForm() {
         type: "size",
         attributes: [{ name: "", value: "" }],
         price: 0,
+        resellerPrice: 0,
         stock: 100,
       },
     ],
@@ -247,6 +251,7 @@ export function AddProductForm() {
       type: "size",
       attributes: [{ name: "", value: "" }],
       price: 0,
+      resellerPrice: 0,
       stock: 100,
     };
     setFormData((prev) => ({
@@ -393,6 +398,8 @@ export function AddProductForm() {
     if (!formData.category) newErrors.category = "Category is required";
     if (!formData.sku.trim()) newErrors.sku = "SKU is required";
     if (!formData.basePrice) newErrors.basePrice = "Base price is required";
+    if (!formData.resellerPrice)
+      newErrors.resellerPrice = "Reseller price is required";
     if (!formData.description.trim())
       newErrors.description = "Description is required";
     if (uploadedImages.length === 0)
@@ -424,6 +431,7 @@ export function AddProductForm() {
       const productData = {
         ...formData,
         basePrice: Number(formData.basePrice),
+        resellerPrice: Number(formData.resellerPrice),
         stockQuantity: Number(formData.stockQuantity),
         shippingTamilNadu: Number(formData.shippingTamilNadu),
         shippingRestOfIndia: Number(formData.shippingRestOfIndia),
@@ -460,6 +468,7 @@ export function AddProductForm() {
         category: "",
         description: "",
         basePrice: "",
+        resellerPrice: "",
         sku: "",
         stockQuantity: "",
         status: true,
@@ -471,6 +480,7 @@ export function AddProductForm() {
             type: "size",
             attributes: [{ name: "", value: "" }],
             price: 0,
+            resellerPrice: 0,
             stock: 100,
           },
         ],
@@ -626,6 +636,29 @@ export function AddProductForm() {
               {errors.basePrice && (
                 <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" /> {errors.basePrice}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Label className="text-gray-700 font-medium">
+                Reseller Price (₹) *
+              </Label>
+              <Input
+                type="number"
+                value={formData.resellerPrice}
+                onChange={(e) =>
+                  handleInputChange(
+                    "resellerPrice",
+                    e.target.value ? Number(e.target.value) : "",
+                  )
+                }
+                placeholder="399"
+                className={`mt-2 ${errors.resellerPrice ? "border-red-500" : ""}`}
+              />
+              {errors.resellerPrice && (
+                <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" /> {errors.resellerPrice}
                 </p>
               )}
             </div>
@@ -1052,19 +1085,35 @@ export function AddProductForm() {
                       />
                     </div>
                   </div>
-
-                  <div>
-                    <Label className="text-xs text-gray-600">Stock</Label>
-                    <Input
-                      type="number"
-                      value={variant.stock}
-                      onChange={(e) =>
-                        updateVariant(variant.id, {
-                          stock: Number(e.target.value),
-                        })
-                      }
-                      className="mt-1 h-8 text-sm"
-                    />
+                  <div className="grid grid-cols-2 gap-2 border-t pt-3">
+                    <div>
+                      <Label className="text-xs text-gray-600">
+                        Reseller Price (₹)
+                      </Label>
+                      <Input
+                        type="number"
+                        value={variant.resellerPrice || ""}
+                        onChange={(e) =>
+                          updateVariant(variant.id, {
+                            resellerPrice: Number(e.target.value),
+                          })
+                        }
+                        className="mt-1 h-8 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-600">Stock</Label>
+                      <Input
+                        type="number"
+                        value={variant.stock}
+                        onChange={(e) =>
+                          updateVariant(variant.id, {
+                            stock: Number(e.target.value),
+                          })
+                        }
+                        className="mt-1 h-8 text-sm"
+                      />
+                    </div>
                   </div>
                 </div>
               </Card>

@@ -189,7 +189,7 @@ export function AdminProductsPage() {
                             Category
                           </TableHead>
                           <TableHead className="hidden md:table-cell min-w-[100px]">
-                            Price
+                            Retail/Reseller
                           </TableHead>
                           <TableHead className="min-w-[60px]">Stock</TableHead>
                           <TableHead className="hidden sm:table-cell min-w-[90px]">
@@ -221,8 +221,17 @@ export function AdminProductsPage() {
                             <TableCell className="hidden sm:table-cell text-xs sm:text-sm">
                               {product.category}
                             </TableCell>
-                            <TableCell className="hidden md:table-cell text-xs sm:text-sm font-semibold">
-                              ₹{product.retailPrice}
+                            <TableCell className="hidden md:table-cell text-xs sm:text-sm">
+                              <div className="flex flex-col">
+                                <span className="font-semibold text-gray-900">
+                                  ₹{product.retailPrice}
+                                </span>
+                                {product.resellerPrice > 0 && (
+                                  <span className="text-[10px] text-blue-600 font-medium">
+                                    Reseller: ₹{product.resellerPrice}
+                                  </span>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell className="text-xs sm:text-sm font-medium">
                               {product.stock}

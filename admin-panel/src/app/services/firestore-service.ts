@@ -34,7 +34,115 @@ import {
   InventoryLog,
   SiteContent,
   SiteSettings,
+  ContactSubmission,
 } from "../types";
+
+// ========== CONTACT SUBMISSIONS ==========
+
+export async function getAllContactSubmissions(): Promise<ContactSubmission[]> {
+  try {
+    const contactRef = collection(firestore, "contact_submissions");
+    const q = query(contactRef, orderBy("updatedAt", "desc"));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate
+          ? data.createdAt.toDate()
+          : data.createdAt,
+        updatedAt: data.updatedAt?.toDate
+          ? data.updatedAt.toDate()
+          : data.updatedAt,
+        messages: (data.messages || []).map((msg: any) => ({
+          ...msg,
+          createdAt: msg.createdAt?.toDate
+            ? msg.createdAt.toDate()
+            : msg.createdAt,
+        })),
+      } as ContactSubmission;
+    });
+  } catch (error) {
+    console.error("Error fetching contact submissions:", error);
+    throw error;
+  }
+}
+
+export function subscribeToAllContactSubmissions(
+  onUpdate: (submissions: ContactSubmission[]) => void,
+) {
+  const contactRef = collection(firestore, "contact_submissions");
+  const q = query(contactRef, orderBy("updatedAt", "desc"));
+  return onSnapshot(q, (querySnapshot) => {
+    const submissions = querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate
+          ? data.createdAt.toDate()
+          : data.createdAt,
+        updatedAt: data.updatedAt?.toDate
+          ? data.updatedAt.toDate()
+          : data.updatedAt,
+        messages: (data.messages || []).map((msg: any) => ({
+          ...msg,
+          createdAt: msg.createdAt?.toDate
+            ? msg.createdAt.toDate()
+            : msg.createdAt,
+        })),
+      } as ContactSubmission;
+    });
+    onUpdate(submissions);
+  });
+}
+
+export async function addContactMessage(
+  submissionId: string,
+  text: string,
+  sender: "customer" | "admin",
+): Promise<void> {
+  try {
+    const docRef = doc(firestore, "contact_submissions", submissionId);
+    await updateDoc(docRef, {
+      messages: arrayUnion({
+        id: "msg_" + Date.now(),
+        text,
+        sender,
+        createdAt: Timestamp.now(),
+      }),
+      updatedAt: Timestamp.now(),
+      status: sender === "admin" ? "replied" : "unread",
+    });
+  } catch (error) {
+    console.error("Error adding contact message:", error);
+    throw error;
+  }
+}
+
+export async function updateContactStatus(
+  id: string,
+  status: "unread" | "read" | "replied",
+): Promise<void> {
+  try {
+    const contactRef = doc(firestore, "contact_submissions", id);
+    await updateDoc(contactRef, { status });
+  } catch (error) {
+    console.error("Error updating contact status:", error);
+    throw error;
+  }
+}
+
+export async function deleteContactSubmission(id: string): Promise<void> {
+  try {
+    const contactRef = doc(firestore, "contact_submissions", id);
+    await deleteDoc(contactRef);
+  } catch (error) {
+    console.error("Error deleting contact submission:", error);
+    throw error;
+  }
+}
 
 // ========== USERS (Common for Admin and Customers) ==========
 

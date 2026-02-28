@@ -31,6 +31,9 @@ import {
   updateSiteContent,
   getSiteSettings,
   updateSiteSettings,
+  getAllContactSubmissions,
+  updateContactStatus,
+  deleteContactSubmission,
 } from "./firestore-service";
 import {
   uploadProductImage,
@@ -44,6 +47,7 @@ import {
   InventoryLog,
   SiteContent,
   SiteSettings,
+  ContactSubmission,
 } from "../types";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, firestore } from "./firebase-config";

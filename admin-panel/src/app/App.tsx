@@ -19,6 +19,7 @@ import { AdminContentPage } from "./components/admin/AdminContentPage";
 import { AdminSettingsPage } from "./components/admin/AdminSettingsPage";
 import { AdminInvoicesPage } from "./components/admin/AdminInvoicesPage";
 import { AdminOfferManagement } from "./components/admin/AdminOfferManagement";
+import { AdminContactSubmissionsPage } from "./components/admin/AdminContactSubmissionsPage";
 
 // Gifts Billing Components
 import { GiftsBillingPage } from "./gifts/pages/GiftsBilling";
@@ -126,6 +127,7 @@ export default function App() {
       "admin-invoices": "Invoices",
       "admin-content": "Website Content",
       "admin-settings": "Settings",
+      "admin-contact-submissions": "Contact Inquiries",
       "gifts-billing": "Gifts Billing System",
     };
 
@@ -154,6 +156,9 @@ export default function App() {
             {currentPage.name === "admin-content" && <AdminContentPage />}
             {currentPage.name === "admin-settings" && <AdminSettingsPage />}
             {currentPage.name === "admin-offers" && <AdminOfferManagement />}
+            {currentPage.name === "admin-contact-submissions" && (
+              <AdminContactSubmissionsPage />
+            )}
             {currentPage.name === "admin-offer-management" && (
               <AdminOfferManagement />
             )}

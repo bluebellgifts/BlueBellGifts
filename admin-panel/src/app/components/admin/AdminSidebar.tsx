@@ -12,6 +12,7 @@ import {
   Menu,
   X,
   Gift,
+  Mail,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -89,6 +90,11 @@ export function AdminSidebar({
       id: "admin-offers",
       name: "Offers",
       icon: <FileText size={20} />,
+    },
+    {
+      id: "admin-contact-submissions",
+      name: "Contact Inquiries",
+      icon: <Mail size={20} />,
     },
   ];
 

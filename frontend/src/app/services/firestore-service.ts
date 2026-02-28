@@ -31,33 +31,120 @@ import {
   InventoryLog,
   SiteContent,
   SiteSettings,
+  ContactSubmission,
 } from "../types";
+
+// ========== CONTACT SUBMISSIONS ==========
+
+export async function submitContactForm(
+  data: Omit<ContactSubmission, "id" | "status" | "createdAt" | "messages">,
+): Promise<string> {
+  try {
+    const contactRef = collection(firestore, "contact_submissions");
+    const docRef = await addDoc(contactRef, {
+      ...data,
+      status: "unread",
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+      messages: [
+        {
+          id: "msg_" + Date.now(),
+          text: data.message,
+          sender: "customer",
+          createdAt: Timestamp.now(),
+        },
+      ],
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error("Error submitting contact form:", error);
+    throw error;
+  }
+}
+
+export function subscribeToContactSubmission(
+  submissionId: string,
+  onUpdate: (submission: ContactSubmission) => void,
+) {
+  const docRef = doc(firestore, "contact_submissions", submissionId);
+  return onSnapshot(docRef, (docSnap) => {
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      onUpdate({
+        id: docSnap.id,
+        ...data,
+        createdAt: data.createdAt?.toDate
+          ? data.createdAt.toDate()
+          : data.createdAt,
+        updatedAt: data.updatedAt?.toDate
+          ? data.updatedAt.toDate()
+          : data.updatedAt,
+        messages: (data.messages || []).map((msg: any) => ({
+          ...msg,
+          createdAt: msg.createdAt?.toDate
+            ? msg.createdAt.toDate()
+            : msg.createdAt,
+        })),
+      } as ContactSubmission);
+    }
+  });
+}
+
+export async function addContactMessage(
+  submissionId: string,
+  text: string,
+  sender: "customer" | "admin",
+): Promise<void> {
+  try {
+    const docRef = doc(firestore, "contact_submissions", submissionId);
+    await updateDoc(docRef, {
+      messages: arrayUnion({
+        id: "msg_" + Date.now(),
+        text,
+        sender,
+        createdAt: Timestamp.now(),
+      }),
+      updatedAt: Timestamp.now(),
+      status: sender === "admin" ? "replied" : "unread",
+    });
+  } catch (error) {
+    console.error("Error adding contact message:", error);
+    throw error;
+  }
+}
 
 // ========== USERS ==========
 
 export async function createOrUpdateUserInFirestore(user: User): Promise<void> {
   try {
     const userRef = doc(firestore, "users", user.id);
-    await setDoc(
-      userRef,
-      {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        phone: user.phone || "",
-        firstName: user.firstName,
-        lastName: user.lastName,
-        dateOfBirth: user.dateOfBirth,
-        profileComplete: user.profileComplete || false,
-        addresses: user.addresses || [],
-        cart: user.cart || [],
-        savedItems: user.savedItems || [],
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now(),
-      },
-      { merge: true },
-    );
+    const userData: any = {
+      id: user.id,
+      name: user.name || "",
+      email: user.email || "",
+      role: user.role || "customer",
+      phone: user.phone || "",
+      profileComplete: user.profileComplete || false,
+      addresses: user.addresses || [],
+      cart: user.cart || [],
+      savedItems: user.savedItems || [],
+      updatedAt: Timestamp.now(),
+    };
+
+    if (user.firstName !== undefined) userData.firstName = user.firstName;
+    if (user.lastName !== undefined) userData.lastName = user.lastName;
+    if (user.dateOfBirth !== undefined) userData.dateOfBirth = user.dateOfBirth;
+
+    // Use setDoc with merge: true to avoid overwriting existing data if document exists
+    // and also to add createdAt only if it's a new document
+    await setDoc(userRef, userData, { merge: true });
+
+    // If document is new, add createdAt
+    const userSnap = await getDoc(userRef);
+    const data = userSnap.data();
+    if (userSnap.exists() && data && !data.createdAt) {
+      await updateDoc(userRef, { createdAt: Timestamp.now() });
+    }
   } catch (error) {
     console.error("Error creating/updating user:", error);
     throw error;
@@ -84,10 +171,15 @@ export async function updateUserProfile(
 ): Promise<void> {
   try {
     const userRef = doc(firestore, "users", userId);
-    await updateDoc(userRef, {
-      ...updates,
-      updatedAt: Timestamp.now(),
-    });
+    // Use setDoc with merge: true instead of updateDoc to handle cases where the doc might not exist
+    await setDoc(
+      userRef,
+      {
+        ...updates,
+        updatedAt: Timestamp.now(),
+      },
+      { merge: true },
+    );
   } catch (error) {
     console.error("Error updating user profile:", error);
     throw error;

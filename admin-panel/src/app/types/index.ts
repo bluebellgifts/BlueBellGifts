@@ -89,6 +89,25 @@ export interface Invoice {
   createdBy?: string;
 }
 
+export interface ContactMessage {
+  id: string;
+  text: string;
+  sender: "customer" | "admin";
+  createdAt: any;
+}
+
+export interface ContactSubmission {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: "unread" | "read" | "replied";
+  messages?: ContactMessage[];
+  createdAt: any;
+  updatedAt?: any;
+}
+
 export interface Category {
   id: string;
   name: string;
