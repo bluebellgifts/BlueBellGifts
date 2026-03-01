@@ -1,3 +1,36 @@
+export interface ProductImage {
+  id: string;
+  url: string;
+}
+
+export interface ProductVariant {
+  id: string;
+  name: string;
+  type: string;
+  attributes: Array<{ name: string; value: string }>;
+  costPrice: number;
+  retailPrice: number;
+  sellingPrice: number;
+  resellerPrice: number;
+  offerPrice?: number;
+  stock: number;
+}
+
+export interface RequiredImageField {
+  id: string;
+  label: string;
+  required: boolean;
+  maxImages: number;
+}
+
+export interface CustomTextField {
+  id: string;
+  label: string;
+  fieldType: "text" | "email" | "date" | "number" | "phone" | "textarea";
+  required: boolean;
+  placeholder: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -5,21 +38,34 @@ export interface Product {
   retailPrice: number;
   resellerPrice: number;
   sellingPrice: number;
-  discountPrice: number;
+  discountPrice?: number;
   costPrice: number;
-  onOffer: boolean;
-  stock: number;
+  onOffer?: boolean;
+  stock?: number;
+  stockQuantity?: number;
   sku: string;
-  image: string;
+  image?: string;
+  images?: ProductImage[];
   description: string;
-  tags: string[];
-  rating: number;
-  reviews: number;
+  tags?: string[];
+  rating?: number;
+  reviews?: number;
   discount?: number;
   needsCustomerName?: boolean;
   needsCustomerPhoto?: boolean;
   multipleImagesRequired?: boolean;
   numberOfImagesRequired?: number;
+  variants?: ProductVariant[];
+  requiredImageFields?: RequiredImageField[];
+  customTextFields?: CustomTextField[];
+  shippingTamilNadu?: number;
+  shippingRestOfIndia?: number;
+  freeShipping?: boolean;
+  status?: boolean;
+  slug?: string;
+  offerPrice?: number;
+  createdAt?: any;
+  updatedAt?: any;
 }
 
 export interface CartItem {

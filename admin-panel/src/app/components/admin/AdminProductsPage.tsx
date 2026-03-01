@@ -19,35 +19,17 @@ import { toast } from "sonner";
 import { AddProductForm } from "./AddProductForm";
 
 export function AdminProductsPage() {
-  const { products, categories: fetchedCategories, loadCategories } = useApp();
+  const { products } = useApp();
   const [searchQuery, setSearchQuery] = useState("");
   const [showAdvancedForm, setShowAdvancedForm] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const rightScrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    loadCategories();
-  }, []);
-
-  useEffect(() => {
-    // Scroll to top when category changes
-    if (rightScrollRef.current) {
-      rightScrollRef.current.scrollTop = 0;
-    }
-  }, [selectedCategory]);
-
-  const categories = fetchedCategories.map((c) => ({
-    value: c.name,
-    label: c.name,
-  }));
 
   const filteredProducts = (products || []).filter((product) => {
     const matchesSearch =
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.sku.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "all" || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    return matchesSearch;
   });
 
   const handleDeleteProduct = async (productId: string) => {
@@ -61,6 +43,15 @@ export function AdminProductsPage() {
     }
   };
 
+  const handleCloseForm = () => {
+    setShowAdvancedForm(false);
+    setEditingProductId(null);
+  };
+
+  const editingProduct = editingProductId
+    ? products.find((p) => p.id === editingProductId)
+    : null;
+
   return (
     <div className="space-y-6">
       {/* Advanced Form Modal */}
@@ -68,17 +59,21 @@ export function AdminProductsPage() {
         <div className="w-full bg-white rounded-lg shadow-lg">
           <div className="sticky top-0 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200 p-5 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900">
-              Add New Product
+              {editingProductId ? "Edit Product" : "Add New Product"}
             </h2>
             <button
-              onClick={() => setShowAdvancedForm(false)}
+              onClick={handleCloseForm}
               className="text-gray-600 hover:text-gray-900 hover:bg-white p-2 rounded-lg transition"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
           <div className="p-6">
-            <AddProductForm />
+            <AddProductForm
+              onSuccess={handleCloseForm}
+              productId={editingProductId || undefined}
+              editingProduct={editingProduct}
+            />
           </div>
         </div>
       )}
@@ -117,50 +112,14 @@ export function AdminProductsPage() {
           </Card>
 
           {/* Two Column Layout: Categories (Left) and Products (Right) */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-[600px]">
-            {/* Left Column: Categories */}
+          <div className="min-h-[600px]">
+            {/* Products Section */}
             <div>
-              <Card className="p-4 md:p-5 sticky top-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">
-                  Categories
-                </h3>
-                <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                  <button
-                    onClick={() => setSelectedCategory("all")}
-                    className={`w-full text-left px-4 py-2 rounded-lg font-medium transition-colors ${
-                      selectedCategory === "all"
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                  >
-                    All Products
-                  </button>
-                  {categories.map((cat) => (
-                    <button
-                      key={cat.value}
-                      onClick={() => setSelectedCategory(cat.value)}
-                      className={`w-full text-left px-4 py-2 rounded-lg font-medium transition-colors ${
-                        selectedCategory === cat.value
-                          ? "bg-blue-500 text-white"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
-                    >
-                      {cat.label}
-                    </button>
-                  ))}
-                </div>
-              </Card>
-            </div>
-
-            {/* Right Column: Products */}
-            <div className="lg:col-span-3">
               <div className="flex flex-col gap-4">
                 {/* Header with Add Button */}
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-bold text-gray-900">
-                    {selectedCategory === "all"
-                      ? "All Products"
-                      : `${selectedCategory} (${filteredProducts.length})`}
+                    All Products ({filteredProducts.length})
                   </h3>
                   <Button
                     variant="primary"
@@ -206,7 +165,11 @@ export function AdminProductsPage() {
                             <TableCell>
                               <div className="flex items-center gap-2 sm:gap-3">
                                 <img
-                                  src={product.image}
+                                  src={
+                                    product.images && product.images.length > 0
+                                      ? product.images[0].url
+                                      : product.image || ""
+                                  }
                                   alt={product.name}
                                   className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-lg flex-shrink-0"
                                 />
@@ -249,11 +212,10 @@ export function AdminProductsPage() {
                             <TableCell>
                               <div className="flex gap-1">
                                 <button
-                                  onClick={() =>
-                                    toast.info(
-                                      "Use Advanced Add form to edit products",
-                                    )
-                                  }
+                                  onClick={() => {
+                                    setEditingProductId(product.id);
+                                    setShowAdvancedForm(true);
+                                  }}
                                   className="p-1.5 sm:p-2 hover:bg-[#eff6ff] text-[#1e40af] rounded-lg transition-colors flex-shrink-0"
                                 >
                                   <Edit size={16} />

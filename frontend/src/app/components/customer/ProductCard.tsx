@@ -44,6 +44,12 @@ export function ProductCard({ product, onNavigate }: ProductCardProps) {
   const showOfferPrice =
     !showResellerBadge && product.onOffer && product.discountPrice;
 
+  // Get first image from images array or fallback to image field
+  const productImage =
+    product.images && product.images.length > 0
+      ? product.images[0].url
+      : product.image || "";
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
     addToCart(product, 1);
@@ -68,7 +74,7 @@ export function ProductCard({ product, onNavigate }: ProductCardProps) {
         {/* Image Section - Responsive */}
         <div className="relative overflow-hidden aspect-square sm:aspect-[4/5] bg-slate-100 flex-shrink-0">
           <img
-            src={product.image}
+            src={productImage}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out"
             loading="lazy"
@@ -143,7 +149,9 @@ export function ProductCard({ product, onNavigate }: ProductCardProps) {
               className="w-full flex items-center justify-center gap-1 py-1.5 px-0.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] sm:text-[11px] font-bold transition-all shadow-sm uppercase overflow-hidden"
             >
               <ShoppingCart size={11} className="shrink-0" />
-              <span className="truncate">{product.stock === 0 ? "OOS" : "Add"}</span>
+              <span className="truncate">
+                {product.stock === 0 ? "OOS" : "Add"}
+              </span>
             </button>
           </div>
         </CardContent>

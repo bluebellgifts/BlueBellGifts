@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Plus,
   X,
@@ -17,6 +17,14 @@ import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import { Badge } from "../ui/badge";
 import { toast } from "sonner";
+import {
+  getCategories,
+  createProduct,
+  updateProduct,
+  incrementProductCount,
+} from "../../services/firestore-service";
+import { uploadFile } from "../../services/storage-service";
+import { Category } from "../../types";
 
 interface VariantAttribute {
   name: string;
@@ -109,7 +117,17 @@ const DEFAULT_IMAGE_FIELDS = [
   "12th Month Image",
 ];
 
-export function AddProductForm() {
+interface AddProductFormProps {
+  onSuccess?: () => void;
+  productId?: string;
+  editingProduct?: any;
+}
+
+export function AddProductForm({
+  onSuccess,
+  productId,
+  editingProduct,
+}: AddProductFormProps) {
   const [formData, setFormData] = useState<ProductFormData>({
     name: "",
     slug: "",
@@ -156,6 +174,64 @@ export function AddProductForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setCategoriesLoading(true);
+        const fetchedCategories = await getCategories();
+        setCategories(fetchedCategories);
+      } catch (error) {
+        console.error("Failed to load categories:", error);
+        toast.error("Failed to load categories");
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    loadCategories();
+  }, []);
+
+  // Load product data when editing
+  useEffect(() => {
+    if (editingProduct) {
+      setFormData({
+        name: editingProduct.name || "",
+        slug: editingProduct.slug || "",
+        category: editingProduct.category || "",
+        description: editingProduct.description || "",
+        costPrice: editingProduct.costPrice || "",
+        retailPrice: editingProduct.retailPrice || "",
+        sellingPrice: editingProduct.sellingPrice || "",
+        resellerPrice: editingProduct.resellerPrice || "",
+        offerPrice: editingProduct.offerPrice || "",
+        sku: editingProduct.sku || "",
+        stockQuantity: editingProduct.stockQuantity || "",
+        status: editingProduct.status ?? true,
+        videoUrls: editingProduct.videos?.map((v: any) => v.url) || [],
+        variants: editingProduct.variants || [],
+        requiredImageFields: editingProduct.requiredImageFields || [],
+        customTextFields: editingProduct.customTextFields || [],
+        shippingTamilNadu: editingProduct.shippingTamilNadu || "",
+        shippingRestOfIndia: editingProduct.shippingRestOfIndia || "",
+        freeShipping: editingProduct.freeShipping || false,
+      });
+
+      // Load existing images
+      if (editingProduct.images && Array.isArray(editingProduct.images)) {
+        setUploadedImages(
+          editingProduct.images.map((img: any) => ({
+            id: img.id,
+            url: img.url,
+            file: new File([""], img.url, { type: "image/jpeg" }),
+          })),
+        );
+      }
+    }
+  }, [editingProduct]);
 
   // Auto-generate slug from product name
   const generateSlug = (name: string) => {
@@ -445,9 +521,27 @@ export function AddProductForm() {
     setIsSubmitting(true);
 
     try {
-      // Prepare data structure
+      // Upload images to Firebase Storage and get real URLs
+      const uploadedImageUrls = await Promise.all(
+        uploadedImages.map(async (img) => {
+          try {
+            const url = await uploadFile("products/images", img.file);
+            return { id: img.id, url };
+          } catch (error) {
+            console.error(`Failed to upload image ${img.id}:`, error);
+            throw new Error(
+              `Failed to upload image: ${(error as Error).message}`,
+            );
+          }
+        }),
+      );
+
+      // Prepare data structure - only include serializable properties
       const productData = {
-        ...formData,
+        name: formData.name,
+        slug: formData.slug,
+        category: formData.category,
+        description: formData.description,
         costPrice: Number(formData.costPrice),
         retailPrice: Number(formData.retailPrice),
         sellingPrice: Number(formData.sellingPrice),
@@ -455,13 +549,13 @@ export function AddProductForm() {
         offerPrice: formData.offerPrice
           ? Number(formData.offerPrice)
           : undefined,
+        sku: formData.sku,
         stockQuantity: Number(formData.stockQuantity),
+        status: formData.status,
         shippingTamilNadu: Number(formData.shippingTamilNadu),
         shippingRestOfIndia: Number(formData.shippingRestOfIndia),
-        images: uploadedImages.map((img) => ({
-          id: img.id,
-          url: img.url,
-        })),
+        freeShipping: formData.freeShipping,
+        images: uploadedImageUrls,
         videos: [
           ...formData.videoUrls.map((url) => ({ url, type: "url" })),
           ...uploadedVideos.map((vid) => ({
@@ -471,6 +565,31 @@ export function AddProductForm() {
             type: "file",
           })),
         ],
+        variants: formData.variants.map((variant) => ({
+          id: variant.id,
+          name: variant.name,
+          type: variant.type,
+          attributes: variant.attributes,
+          costPrice: variant.costPrice,
+          retailPrice: variant.retailPrice,
+          sellingPrice: variant.sellingPrice,
+          resellerPrice: variant.resellerPrice,
+          offerPrice: variant.offerPrice,
+          stock: variant.stock,
+        })),
+        requiredImageFields: formData.requiredImageFields.map((field) => ({
+          id: field.id,
+          label: field.label,
+          required: field.required,
+          maxImages: field.maxImages,
+        })),
+        customTextFields: formData.customTextFields.map((field) => ({
+          id: field.id,
+          label: field.label,
+          fieldType: field.fieldType,
+          required: field.required,
+          placeholder: field.placeholder,
+        })),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -479,10 +598,28 @@ export function AddProductForm() {
       console.log("🎉 Product Form Data:", productData);
       console.log("📋 JSON Structure:", JSON.stringify(productData, null, 2));
 
-      // Here you would typically call an API to save the product
-      // await saveProductToFirestore(productData);
+      // Save product to Firestore (Create or Update)
+      if (productId) {
+        // Update existing product
+        await updateProduct(productId, productData as any);
+        toast.success("🎉 Product updated successfully!", {
+          description: `"${formData.name}" has been updated`,
+          duration: 5000,
+        });
+      } else {
+        // Create new product
+        const newProductId = await createProduct(productData as any);
 
-      toast.success("Product saved successfully!");
+        // Increment product count for the category
+        if (formData.category) {
+          await incrementProductCount(formData.category);
+        }
+
+        toast.success("🎉 Product saved successfully!", {
+          description: `"${formData.name}" has been added to your catalog`,
+          duration: 5000,
+        });
+      }
 
       // Reset form
       setFormData({
@@ -521,6 +658,11 @@ export function AddProductForm() {
       });
       setUploadedImages([]);
       setUploadedVideos([]);
+
+      // Close form after 2 seconds to let user see success message
+      setTimeout(() => {
+        onSuccess?.();
+      }, 2000);
     } catch (error) {
       console.error("Error saving product:", error);
       toast.error("Failed to save product");
@@ -612,17 +754,15 @@ export function AddProductForm() {
               <Select
                 options={[
                   { value: "", label: "Select a category" },
-                  {
-                    value: "Personalized Products",
-                    label: "Personalized Products",
-                  },
-                  { value: "Frames", label: "Frames" },
-                  { value: "Decor", label: "Decor" },
-                  { value: "Gifts", label: "Gifts" },
+                  ...categories.map((category) => ({
+                    value: category.id,
+                    label: category.name,
+                  })),
                 ]}
                 value={formData.category}
                 onChange={(e) => handleInputChange("category", e.target.value)}
                 className={`mt-2 ${errors.category ? "border-red-500" : ""}`}
+                disabled={categoriesLoading}
               />
               {errors.category && (
                 <p className="text-red-500 text-sm mt-1 flex items-center gap-1">

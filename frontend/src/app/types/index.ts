@@ -1,21 +1,83 @@
+export interface ProductVariant {
+  id: string;
+  name: string;
+  type: string;
+  attributes: Array<{ name: string; value: string }>;
+  costPrice: number;
+  retailPrice: number;
+  sellingPrice: number;
+  resellerPrice: number;
+  offerPrice?: number;
+  stock: number;
+}
+
+export interface ProductImage {
+  id: string;
+  url: string;
+}
+
+export interface RequiredImageField {
+  id: string;
+  label: string;
+  required: boolean;
+  maxImages: number;
+}
+
+export interface CustomTextField {
+  id: string;
+  label: string;
+  fieldType: "text" | "email" | "date" | "number" | "phone" | "textarea";
+  required: boolean;
+  placeholder: string;
+}
+
 export interface Product {
   id: string;
   name: string;
   category: string;
-  retailPrice: number;
-  resellerPrice: number;
-  discountPrice: number;
-  sellingPrice: number;
-  costPrice: number;
-  onOffer: boolean;
-  stock: number;
-  sku: string;
-  image: string;
   description: string;
-  tags: string[];
-  rating: number;
-  reviews: number;
+  slug?: string;
+  sku: string;
+  status?: boolean;
+
+  // Pricing
+  costPrice: number;
+  retailPrice: number;
+  sellingPrice: number;
+  resellerPrice: number;
+  offerPrice?: number;
+  discountPrice?: number;
+  onOffer?: boolean;
   discount?: number;
+
+  // Stock & Inventory
+  stockQuantity?: number;
+  stock: number;
+
+  // Images & Media
+  images?: ProductImage[];
+  image?: string; // Fallback for old format
+  videos?: Array<{
+    url: string;
+    type: "url" | "file";
+    id?: string;
+    name?: string;
+  }>;
+
+  // Variants & Customization
+  variants?: ProductVariant[];
+  requiredImageFields?: RequiredImageField[];
+  customTextFields?: CustomTextField[];
+
+  // Shipping
+  shippingTamilNadu?: number;
+  shippingRestOfIndia?: number;
+  freeShipping?: boolean;
+
+  // Old format fields (backwards compatibility)
+  tags?: string[];
+  rating?: number;
+  reviews?: number;
   needsCustomerName?: boolean;
   needsCustomerPhoto?: boolean;
   multipleImagesRequired?: boolean;
@@ -28,18 +90,19 @@ export interface Product {
     placeholder?: string;
     helpText?: string;
   }>;
-  requiredImageFields?: Array<{
-    id: string;
-    label: string;
-    required: boolean;
-    maxImages: number;
-  }>;
+
+  // Timestamps
+  createdAt?: any;
+  updatedAt?: any;
 }
 
 export interface CartItemCustomization {
+  selectedVariantId?: string;
   customerName?: string;
   customerPhotoUrl?: string;
   customerImages?: string[];
+  customTextFields?: { [fieldId: string]: string };
+  requiredImageFields?: { [fieldId: string]: string[] };
   customFields?: { [fieldId: string]: string };
   imageFields?: { [fieldId: string]: string[] };
 }
