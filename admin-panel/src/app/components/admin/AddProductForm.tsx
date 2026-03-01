@@ -514,7 +514,29 @@ export function AddProductForm({
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error("Please fix all errors before submitting");
+      toast.error("Form incomplete!", {
+        description: "Please fill all required fields marked in red.",
+        duration: 4000,
+      });
+
+      // Give state a moment to update DOM with error classes
+      setTimeout(() => {
+        // Find the first element with red border (error) or a specific error message
+        const firstError = document.querySelector(
+          ".border-red-500, [class*='text-red-500']",
+        );
+        if (firstError) {
+          firstError.scrollIntoView({ behavior: "smooth", block: "center" });
+          // If it's an input, focus it
+          if (
+            firstError instanceof HTMLInputElement ||
+            firstError instanceof HTMLTextAreaElement
+          ) {
+            firstError.focus();
+          }
+        }
+      }, 100);
+
       return;
     }
 
