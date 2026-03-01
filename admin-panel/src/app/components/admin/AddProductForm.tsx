@@ -602,6 +602,10 @@ export function AddProductForm({
       if (productId) {
         // Update existing product
         await updateProduct(productId, productData as any);
+
+        // Scroll to top and show success notification
+        window.scrollTo({ top: 0, behavior: "smooth" });
+
         toast.success("🎉 Product updated successfully!", {
           description: `"${formData.name}" has been updated`,
           duration: 5000,
@@ -614,6 +618,9 @@ export function AddProductForm({
         if (formData.category) {
           await incrementProductCount(formData.category);
         }
+
+        // Scroll to top and show success notification
+        window.scrollTo({ top: 0, behavior: "smooth" });
 
         toast.success("🎉 Product saved successfully!", {
           description: `"${formData.name}" has been added to your catalog`,
@@ -931,18 +938,6 @@ export function AddProductForm({
                   <AlertCircle className="w-4 h-4" /> {errors.description}
                 </p>
               )}
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Switch
-                checked={formData.status}
-                onCheckedChange={(checked) =>
-                  handleInputChange("status", checked)
-                }
-              />
-              <Label className="text-gray-700 font-medium">
-                {formData.status ? "Active" : "Inactive"}
-              </Label>
             </div>
           </div>
         </Card>
@@ -1450,16 +1445,21 @@ export function AddProductForm({
                       className="font-medium"
                     />
 
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm text-gray-600">
-                        Required Field
-                      </Label>
+                    <div className="flex items-center gap-4 bg-gray-100 p-3 rounded-lg border border-gray-300 transition-all hover:bg-gray-200 group">
                       <Switch
+                        id={`required-${field.id}`}
                         checked={field.required}
                         onCheckedChange={(checked) =>
                           updateImageField(field.id, { required: checked })
                         }
+                        className="scale-110"
                       />
+                      <Label
+                        htmlFor={`required-${field.id}`}
+                        className="text-sm text-gray-800 font-bold cursor-pointer flex-1 group-hover:text-black transition-colors"
+                      >
+                        Mark as Required
+                      </Label>
                     </div>
 
                     <div>
