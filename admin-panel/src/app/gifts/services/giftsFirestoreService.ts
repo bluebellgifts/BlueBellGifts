@@ -344,12 +344,12 @@ export const getMainProductsForBilling = async (): Promise<GiftProduct[]> => {
 };
 
 export const getProductsByCategory = async (
-  category: string,
+  categoryId: string,
 ): Promise<GiftProduct[]> => {
   try {
     const q = query(
       collection(firestore, PRODUCTS_COLLECTION),
-      where("category", "==", category),
+      where("category", "==", categoryId),
       where("isActive", "==", true),
       orderBy("name"),
     );

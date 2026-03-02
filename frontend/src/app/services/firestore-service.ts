@@ -254,14 +254,10 @@ export async function getProductById(
 }
 
 export async function getProductsByCategory(
-  category: string,
+  categoryId: string,
 ): Promise<Product[]> {
   try {
-    const q = query(
-      collection(firestore, "products"),
-      where("category", "==", category),
-    );
-    return getProducts([where("category", "==", category)]);
+    return getProducts([where("category", "==", categoryId)]);
   } catch (error) {
     console.error("Error fetching products by category:", error);
     throw error;
@@ -282,7 +278,7 @@ export async function searchProducts(searchTerm: string): Promise<Product[]> {
       if (
         product.name.toLowerCase().includes(lowerSearchTerm) ||
         product.description.toLowerCase().includes(lowerSearchTerm) ||
-        product.tags.some((tag) => tag.toLowerCase().includes(lowerSearchTerm))
+        product.tags?.some((tag) => tag.toLowerCase().includes(lowerSearchTerm))
       ) {
         results.push({ ...product, id: doc.id });
       }
@@ -533,10 +529,29 @@ export async function saveUserCart(
   cartItems: CartItem[],
 ): Promise<void> {
   try {
+    const userCartRef = collection(firestore, "users", userId, "cart");
+
+    // First, clear existing cart items
+    const existingItems = await getDocs(userCartRef);
+    for (const doc of existingItems.docs) {
+      await deleteDoc(doc.ref);
+    }
+
+    // Add new cart items
+    for (const item of cartItems) {
+      const cartItemRef = doc(userCartRef, item.product.id);
+      await setDoc(cartItemRef, {
+        product: item.product,
+        quantity: item.quantity,
+        customization: item.customization || null,
+        addedAt: Timestamp.now(),
+      });
+    }
+
+    // Also update the user document with last updated timestamp
     const userRef = doc(firestore, "users", userId);
     await updateDoc(userRef, {
-      cart: cartItems,
-      updatedAt: Timestamp.now(),
+      cartUpdatedAt: Timestamp.now(),
     });
   } catch (error) {
     console.error("Error saving cart:", error);
@@ -546,12 +561,20 @@ export async function saveUserCart(
 
 export async function getUserCart(userId: string): Promise<CartItem[]> {
   try {
-    const userRef = doc(firestore, "users", userId);
-    const userSnap = await getDoc(userRef);
-    if (userSnap.exists()) {
-      return userSnap.data().cart || [];
-    }
-    return [];
+    const userCartRef = collection(firestore, "users", userId, "cart");
+    const snapshot = await getDocs(userCartRef);
+
+    const cartItems: CartItem[] = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      cartItems.push({
+        product: data.product,
+        quantity: data.quantity,
+        customization: data.customization,
+      });
+    });
+
+    return cartItems;
   } catch (error) {
     console.error("Error fetching cart:", error);
     throw error;
@@ -560,10 +583,18 @@ export async function getUserCart(userId: string): Promise<CartItem[]> {
 
 export async function clearUserCart(userId: string): Promise<void> {
   try {
+    const userCartRef = collection(firestore, "users", userId, "cart");
+    const snapshot = await getDocs(userCartRef);
+
+    // Delete all cart items
+    for (const doc of snapshot.docs) {
+      await deleteDoc(doc.ref);
+    }
+
+    // Update user document
     const userRef = doc(firestore, "users", userId);
     await updateDoc(userRef, {
-      cart: [],
-      updatedAt: Timestamp.now(),
+      cartUpdatedAt: Timestamp.now(),
     });
   } catch (error) {
     console.error("Error clearing cart:", error);
@@ -575,13 +606,14 @@ export async function clearUserCart(userId: string): Promise<void> {
 
 export async function saveProductToWishlist(
   userId: string,
-  productId: string,
+  product: Product,
 ): Promise<void> {
   try {
-    const userRef = doc(firestore, "users", userId);
-    await updateDoc(userRef, {
-      savedItems: arrayUnion(productId),
-      updatedAt: Timestamp.now(),
+    const userWishlistRef = collection(firestore, "users", userId, "wishlist");
+    const wishlistItemRef = doc(userWishlistRef, product.id);
+    await setDoc(wishlistItemRef, {
+      ...product,
+      addedAt: Timestamp.now(),
     });
   } catch (error) {
     console.error("Error saving product to wishlist:", error);
@@ -594,25 +626,27 @@ export async function removeProductFromWishlist(
   productId: string,
 ): Promise<void> {
   try {
-    const userRef = doc(firestore, "users", userId);
-    await updateDoc(userRef, {
-      savedItems: arrayRemove(productId),
-      updatedAt: Timestamp.now(),
-    });
+    const userWishlistRef = collection(firestore, "users", userId, "wishlist");
+    const wishlistItemRef = doc(userWishlistRef, productId);
+    await deleteDoc(wishlistItemRef);
   } catch (error) {
     console.error("Error removing product from wishlist:", error);
     throw error;
   }
 }
 
-export async function getUserSavedItems(userId: string): Promise<string[]> {
+export async function getUserSavedItems(userId: string): Promise<Product[]> {
   try {
-    const userRef = doc(firestore, "users", userId);
-    const userSnap = await getDoc(userRef);
-    if (userSnap.exists()) {
-      return userSnap.data().savedItems || [];
-    }
-    return [];
+    const userWishlistRef = collection(firestore, "users", userId, "wishlist");
+    const snapshot = await getDocs(userWishlistRef);
+
+    const products: Product[] = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      products.push(data as Product);
+    });
+
+    return products;
   } catch (error) {
     console.error("Error fetching saved items:", error);
     throw error;
@@ -895,7 +929,7 @@ export async function updateSiteSettings(
 
 export async function getOfferText(): Promise<string | null> {
   try {
-    const docRef = doc(firestore, "offers", "text");
+    const docRef = doc(firestore, "offers", "offerText");
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       return docSnap.data().text || null;
@@ -918,6 +952,26 @@ export async function getOfferBannerImages(): Promise<any[]> {
     return banners;
   } catch (error) {
     console.error("Error fetching offer banners:", error);
+    throw error;
+  }
+}
+
+export async function saveOfferText(text: string): Promise<void> {
+  try {
+    const docRef = doc(firestore, "offers", "text");
+    await setDoc(docRef, { text }, { merge: true });
+  } catch (error) {
+    console.error("Error saving offer text:", error);
+    throw error;
+  }
+}
+
+export async function deleteOfferBanner(bannerId: string): Promise<void> {
+  try {
+    const bannerRef = doc(firestore, "offers", "banners", "images", bannerId);
+    await deleteDoc(bannerRef);
+  } catch (error) {
+    console.error("Error deleting offer banner:", error);
     throw error;
   }
 }

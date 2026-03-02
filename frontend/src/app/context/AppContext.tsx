@@ -25,6 +25,9 @@ import {
   getAllProducts,
   getOrdersByUserId,
   listenToProducts,
+  saveProductToWishlist,
+  removeProductFromWishlist,
+  getUserSavedItems,
 } from "../services/firestore-service";
 
 interface AppContextType {
@@ -56,8 +59,8 @@ interface AppContextType {
 
   // Wishlist
   wishlist: Product[];
-  addToWishlist: (product: Product) => void;
-  removeFromWishlist: (productId: string) => void;
+  addToWishlist: (product: Product) => Promise<void>;
+  removeFromWishlist: (productId: string) => Promise<void>;
   isInWishlist: (productId: string) => boolean;
 
   // Auth
@@ -77,16 +80,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Initialize auth and load user
   useEffect(() => {
-    // Load wishlist from localStorage on mount
-    const savedWishlist = localStorage.getItem("wishlist");
-    if (savedWishlist) {
-      try {
-        setWishlist(JSON.parse(savedWishlist));
-      } catch (e) {
-        console.error("Error parsing wishlist:", e);
-      }
-    }
-
     const unsubscribe = getCurrentUser(async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
@@ -96,6 +89,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           setCart(userCart);
         } catch (error) {
           console.error("Error loading cart:", error);
+        }
+        // Load user's wishlist from Firestore
+        try {
+          const userWishlist = await getUserSavedItems(currentUser.id);
+          setWishlist(userWishlist);
+        } catch (error) {
+          console.error("Error loading wishlist:", error);
         }
         // Load user's orders from Firestore
         try {
@@ -107,17 +107,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } else {
         setCart([]);
         setOrders([]);
+        setWishlist([]);
       }
       setIsLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
-
-  // Save wishlist to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem("wishlist", JSON.stringify(wishlist));
-  }, [wishlist]);
 
   // Load products with real-time listener
   useEffect(() => {
@@ -252,15 +248,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addToWishlist = (product: Product) => {
+  const addToWishlist = async (product: Product) => {
     setWishlist((prev) => {
       if (prev.find((p) => p.id === product.id)) return prev;
       return [...prev, product];
     });
+
+    if (user?.id) {
+      await saveProductToWishlist(user.id, product);
+    }
   };
 
-  const removeFromWishlist = (productId: string) => {
+  const removeFromWishlist = async (productId: string) => {
     setWishlist((prev) => prev.filter((p) => p.id !== productId));
+
+    if (user?.id) {
+      await removeProductFromWishlist(user.id, productId);
+    }
   };
 
   const isInWishlist = (productId: string) => {

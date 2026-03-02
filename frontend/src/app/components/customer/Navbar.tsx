@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   ShoppingCart,
   User,
-  Search,
   Menu,
   X,
   Heart,
@@ -12,7 +11,6 @@ import {
   ChevronDown,
   Home,
   Grid,
-  Tag,
   HelpCircle,
   Sparkles,
   ArrowRight,
@@ -22,6 +20,7 @@ import {
   RotateCcw,
   Package,
   MessageCircle,
+  Zap,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 
@@ -35,9 +34,55 @@ export function Navbar({ onNavigate, currentPage }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState<{
+    city: string;
+    postcode: string;
+  }>({ city: "Mumbai", postcode: "400001" });
+  const [locationLoading, setLocationLoading] = useState(true);
 
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const wishlistCount = wishlist.length;
+
+  // Get user's location on component mount
+  useEffect(() => {
+    const getUserLocation = async () => {
+      try {
+        if ("geolocation" in navigator) {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              try {
+                const { latitude, longitude } = position.coords;
+                // Use reverse geocoding to get city name
+                const response = await fetch(
+                  `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+                );
+                const data = await response.json();
+                const city =
+                  data.address?.city || data.address?.county || "Your City";
+                const postcode = data.address?.postcode || "000000";
+                setCurrentLocation({ city, postcode });
+              } catch (error) {
+                console.error("Error getting location details:", error);
+              } finally {
+                setLocationLoading(false);
+              }
+            },
+            (error) => {
+              console.log("Geolocation error:", error);
+              setLocationLoading(false);
+            },
+          );
+        } else {
+          setLocationLoading(false);
+        }
+      } catch (error) {
+        console.error("Geolocation setup error:", error);
+        setLocationLoading(false);
+      }
+    };
+
+    getUserLocation();
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -49,9 +94,10 @@ export function Navbar({ onNavigate, currentPage }: NavbarProps) {
 
   const navItems = [
     { name: "Home", path: "home", icon: Home },
-    { name: "Shop", path: "categories", icon: Grid },
-    { name: "Deals", path: "products", icon: Tag },
-    { name: "About", path: "about", icon: HelpCircle },
+    { name: "Categories", path: "categories", icon: Grid },
+    { name: "Deal of the Day", path: "deals", icon: Zap },
+    { name: "Wishlist", path: "wishlist", icon: Heart },
+    { name: "Profile", path: user ? "account" : "login", icon: User },
   ];
 
   const handleLogout = async () => {
@@ -92,7 +138,9 @@ export function Navbar({ onNavigate, currentPage }: NavbarProps) {
                 <span>
                   Deliver to{" "}
                   <span className="text-slate-900 border-b border-dashed border-slate-300">
-                    Mumbai 400001
+                    {locationLoading
+                      ? "Detecting..."
+                      : `${currentLocation.city} ${currentLocation.postcode}`}
                   </span>
                 </span>
               </button>
@@ -121,10 +169,11 @@ export function Navbar({ onNavigate, currentPage }: NavbarProps) {
           <div className="flex items-center justify-between gap-4">
             {/* Logo Section */}
             <div className="flex items-center gap-3 flex-shrink-0">
-              {/* Mobile Menu Toggle */}
+              {/* Menu Toggle - Mobile & Desktop */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2 -ml-2 text-slate-700 hover:bg-slate-100 rounded-full transition-colors active:scale-95"
+                className="p-2 -ml-2 text-slate-700 hover:bg-slate-100 rounded-full transition-colors active:scale-95"
+                title="Toggle menu drawer"
               >
                 {mobileMenuOpen ? (
                   <X size={24} strokeWidth={1.5} />
@@ -153,35 +202,26 @@ export function Navbar({ onNavigate, currentPage }: NavbarProps) {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-8">
-              {navItems.map((item) => (
-                <button
-                  key={item.path}
-                  onClick={() => onNavigate(item.path)}
-                  className={`text-sm font-semibold transition-colors duration-200 hover:text-blue-600 relative py-2 ${
-                    currentPage === item.path
-                      ? "text-blue-600"
-                      : "text-slate-600"
-                  }`}
-                >
-                  {item.name}
-                  {currentPage === item.path && (
-                    <span className="absolute bottom-0 left-0 w-full h-[2px] bg-blue-600 rounded-full"></span>
-                  )}
-                </button>
-              ))}
-
-              {/* Desktop Search */}
-              <div className="relative group w-64 lg:w-80">
-                <input
-                  type="text"
-                  placeholder="Search for premium gifts..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all shadow-inner group-hover:bg-white"
-                />
-                <Search
-                  size={16}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors"
-                />
-              </div>
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => onNavigate(item.path)}
+                    className={`flex items-center gap-2 text-sm font-semibold transition-colors duration-200 hover:text-blue-600 relative py-2 ${
+                      currentPage === item.path
+                        ? "text-blue-600"
+                        : "text-slate-600"
+                    }`}
+                  >
+                    <Icon size={18} strokeWidth={1.5} />
+                    {item.name}
+                    {currentPage === item.path && (
+                      <span className="absolute bottom-0 left-0 w-full h-[2px] bg-blue-600 rounded-full"></span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Right Actions */}
@@ -262,22 +302,22 @@ export function Navbar({ onNavigate, currentPage }: NavbarProps) {
       {/* spacer to prevent content from hiding behind fixed header */}
       <div className="h-[72px] md:h-[110px]"></div>
 
-      {/* Mobile Menu Overlay */}
+      {/* Menu Overlay */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/60 z-50 md:hidden backdrop-blur-sm transition-opacity"
+          className="fixed inset-0 bg-slate-900/40 md:bg-slate-900/20 z-50 backdrop-blur-sm transition-opacity"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
-      {/* Mobile Menu Drawer */}
+      {/* Menu Drawer - Mobile & Desktop */}
       <div
-        className={`fixed left-0 top-0 w-[85%] max-w-sm h-full bg-white z-[60] shadow-2xl transition-transform duration-300 ease-out md:hidden flex flex-col ${
+        className={`fixed left-0 top-0 w-[85%] md:w-96 max-w-sm md:max-w-none h-screen bg-white z-[60] shadow-2xl md:shadow-2xl transition-transform duration-300 ease-out flex flex-col ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Drawer Header */}
-        <div className="p-6 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+        <div className="p-6 md:p-5 bg-slate-50 md:bg-gradient-to-r md:from-blue-50 md:to-blue-50/50 border-b border-slate-100 flex justify-between items-center sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <img
               src="/logo.png"
@@ -292,14 +332,15 @@ export function Navbar({ onNavigate, currentPage }: NavbarProps) {
           </div>
           <button
             onClick={() => setMobileMenuOpen(false)}
-            className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-500"
+            className="p-2 hover:bg-slate-200 md:hover:bg-slate-300/30 rounded-full transition-colors text-slate-500 md:text-slate-600"
+            title="Close menu"
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Drawer Content */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 md:space-y-8">
           {/* User Section */}
           {!user ? (
             <div

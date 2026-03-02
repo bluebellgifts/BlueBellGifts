@@ -12,8 +12,8 @@ export function WishlistPage({ onNavigate }: WishlistPageProps) {
   const { addToCart, wishlist, removeFromWishlist, products } = useApp();
   const wishlistItems = wishlist;
 
-  const handleRemoveFromWishlist = (productId: string) => {
-    removeFromWishlist(productId);
+  const handleRemoveFromWishlist = async (productId: string) => {
+    await removeFromWishlist(productId);
   };
 
   return (

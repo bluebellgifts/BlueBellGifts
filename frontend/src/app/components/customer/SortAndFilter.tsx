@@ -82,7 +82,7 @@ export function SortAndFilter({
 
   return (
     <Drawer open={isOpen} onOpenChange={onOpenChange} direction="bottom">
-      <DrawerContent className="relative flex flex-col h-full">
+      <DrawerContent className="relative flex flex-col">
         {/* Hidden for visual design but required for accessibility */}
         <DrawerTitle className="sr-only">Categories, Deals & More</DrawerTitle>
         <DrawerDescription className="sr-only">
@@ -102,8 +102,8 @@ export function SortAndFilter({
           </Button>
         </div>
 
-        <ScrollArea className="flex-1 px-5 py-5 overflow-hidden">
-          <div className="space-y-6 pb-24">
+        <ScrollArea className="flex-1 w-full overflow-y-auto">
+          <div className="px-5 py-5 space-y-6">
             {/* Categories Section */}
             <section>
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
@@ -282,7 +282,7 @@ export function SortAndFilter({
           </div>
         </ScrollArea>
 
-        <DrawerFooter className="border-t bg-slate-50 border-slate-200 flex flex-row gap-2 p-4 sticky bottom-0">
+        <DrawerFooter className="border-t bg-slate-50 border-slate-200 flex flex-row gap-2 p-4">
           <Button
             variant="outline"
             className="flex-1 rounded-lg h-10 bg-white text-sm"
@@ -318,7 +318,7 @@ export function FilterTrigger({
   }
 
   return (
-    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[110] md:hidden">
+    <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[110]">
       <button
         onClick={onClick}
         className="group relative flex items-center gap-2 bg-slate-900/90 backdrop-blur-md text-white px-5 py-2.5 rounded-full shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 border border-white/20"

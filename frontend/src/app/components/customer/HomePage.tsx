@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useApp } from "../../context/AppContext";
 import { ProductCard } from "./ProductCard";
+import { OfferBannerCarousel } from "./OfferBannerCarousel";
 import { Loader2 } from "lucide-react";
 import { SearchBar } from "../ui/SearchBar";
 import { FilterState, SortOption } from "./SortAndFilter";
@@ -53,7 +54,7 @@ export function HomePage({ onNavigate, filters, sortBy }: HomePageProps) {
           return false;
         if (filters.ratings.length > 0) {
           const minRating = Math.min(...filters.ratings);
-          if (product.rating < minRating) return false;
+          if ((product.rating ?? 0) < minRating) return false;
         }
         if (filters.onOffer && !product.onOffer) return false;
         if (filters.inStock && product.stock <= 0) return false;
@@ -69,9 +70,9 @@ export function HomePage({ onNavigate, filters, sortBy }: HomePageProps) {
         case "price-high":
           return b.sellingPrice - a.sellingPrice;
         case "rating":
-          return b.rating - a.rating;
+          return (b.rating ?? 0) - (a.rating ?? 0);
         case "popular":
-          return b.reviews - a.reviews;
+          return (b.reviews ?? 0) - (a.reviews ?? 0);
         case "newest":
         default:
           return 0; // Assuming newest is handled by default order or if there was a date
@@ -80,6 +81,12 @@ export function HomePage({ onNavigate, filters, sortBy }: HomePageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pb-20">
+      {/* Offer Banner Carousel */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <OfferBannerCarousel />
+      </div>
+
+      {/* Search Bar and Products */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Search Bar */}
         <div className="mb-8">

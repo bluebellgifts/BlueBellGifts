@@ -124,10 +124,18 @@ export function ProductDetailPage({
   const hasVariants = product.variants && product.variants.length > 0;
   const hasCustomization =
     (product.customTextFields && product.customTextFields.length > 0) ||
-    (product.requiredImageFields &&
-      product.requiredImageFields.length > 0);
+    (product.requiredImageFields && product.requiredImageFields.length > 0);
 
   const handleAddToCart = () => {
+    if (!user) {
+      onNavigate("login", {
+        redirect: "product-detail",
+        productId: product.id,
+      });
+      toast.error("Please login to add items to cart");
+      return;
+    }
+
     if (hasCustomization) {
       setShowCustomizationForm(true);
     } else {
@@ -269,7 +277,10 @@ export function ProductDetailPage({
                     ₹{displayPrice.toLocaleString()}
                   </span>
                   <span className="text-sm md:text-base text-slate-400 line-through decoration-slate-400">
-                    ₹{(selectedVariant?.retailPrice || product.retailPrice).toLocaleString()}
+                    ₹
+                    {(
+                      selectedVariant?.retailPrice || product.retailPrice
+                    ).toLocaleString()}
                   </span>
                   {discountPercentage > 0 && (
                     <span className="px-3 py-1 bg-red-50 text-red-600 text-sm font-bold rounded-lg whitespace-nowrap">
@@ -284,8 +295,7 @@ export function ProductDetailPage({
                       <Check size={14} strokeWidth={3} /> In Stock & Ready to
                       Ship
                     </span>
-                  ) : (selectedVariant?.stock ||
-                      product.stock) > 0 ? (
+                  ) : (selectedVariant?.stock || product.stock) > 0 ? (
                     <span className="flex items-center gap-1.5 text-amber-600 text-sm font-medium bg-amber-50 px-2 py-0.5 rounded-md">
                       Only {selectedVariant?.stock || product.stock} items left
                     </span>
@@ -315,9 +325,7 @@ export function ProductDetailPage({
                           : "border-slate-200 bg-white hover:border-blue-300"
                       }`}
                     >
-                      <p className="font-bold text-slate-900">
-                        {variant.name}
-                      </p>
+                      <p className="font-bold text-slate-900">{variant.name}</p>
                       {variant.attributes.length > 0 && (
                         <p className="text-sm text-slate-600">
                           {variant.attributes
@@ -355,8 +363,8 @@ export function ProductDetailPage({
                     setQuantity(
                       Math.min(
                         selectedVariant?.stock || product.stock || 1,
-                        quantity + 1
-                      )
+                        quantity + 1,
+                      ),
                     )
                   }
                   className="px-4 h-full hover:bg-slate-50 rounded-r-full transition-colors"
@@ -458,7 +466,11 @@ export function ProductDetailPage({
                             />
                           ) : (
                             <Input
-                              type={field.fieldType === "date" ? "date" : field.fieldType}
+                              type={
+                                field.fieldType === "date"
+                                  ? "date"
+                                  : field.fieldType
+                              }
                               value={customTextFieldValues[field.id] || ""}
                               onChange={(e) =>
                                 setCustomTextFieldValues((prev) => ({
@@ -531,7 +543,7 @@ export function ProductDetailPage({
                                         onClick={() =>
                                           removeRequiredImage(
                                             imageField.id,
-                                            idx
+                                            idx,
                                           )
                                         }
                                         className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
@@ -539,7 +551,7 @@ export function ProductDetailPage({
                                         <X className="w-4 h-4" />
                                       </button>
                                     </div>
-                                  )
+                                  ),
                                 )}
                               </div>
                             )}

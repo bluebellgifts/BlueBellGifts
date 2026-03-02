@@ -50,17 +50,36 @@ export function ProductCard({ product, onNavigate }: ProductCardProps) {
       ? product.images[0].url
       : product.image || "";
 
+  // Check if product requires personalization
+  const hasCustomization =
+    (product.customTextFields && product.customTextFields.length > 0) ||
+    (product.requiredImageFields && product.requiredImageFields.length > 0);
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!user) {
+      onNavigate("login", {
+        redirect: "product-detail",
+        productId: product.id,
+      });
+      return;
+    }
+
+    // If product requires customization, navigate to product detail page
+    if (hasCustomization) {
+      onNavigate("product-detail", { productId: product.id });
+      return;
+    }
+
     addToCart(product, 1);
   };
 
-  const handleWishlist = (e: React.MouseEvent) => {
+  const handleWishlist = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isWishlisted) {
-      removeFromWishlist(product.id);
+      await removeFromWishlist(product.id);
     } else {
-      addToWishlist(product);
+      await addToWishlist(product);
     }
   };
 

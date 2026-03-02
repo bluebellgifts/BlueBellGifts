@@ -278,14 +278,10 @@ export async function getProductById(
 }
 
 export async function getProductsByCategory(
-  category: string,
+  categoryId: string,
 ): Promise<Product[]> {
   try {
-    const q = query(
-      collection(firestore, "products"),
-      where("category", "==", category),
-    );
-    return getProducts([where("category", "==", category)]);
+    return getProducts([where("category", "==", categoryId)]);
   } catch (error) {
     console.error("Error fetching products by category:", error);
     throw error;
@@ -1191,9 +1187,9 @@ export async function uploadOfferBannerImage(file: File): Promise<string> {
     const storageModule = await import("./storage-service");
     const downloadUrl = await storageModule.uploadFile("offer-banners", file);
 
-    // Save to Firestore offerbanners collection
+    // Save to Firestore nested offers/banners/images collection
     const bannerId = `banner-${Date.now()}`;
-    const docRef = doc(firestore, "offerbanners", bannerId);
+    const docRef = doc(firestore, "offers", "banners", "images", bannerId);
     await setDoc(docRef, {
       id: bannerId,
       imageUrl: downloadUrl,
@@ -1213,10 +1209,8 @@ export async function uploadOfferBannerImage(file: File): Promise<string> {
 
 export async function getOfferBannerImages(): Promise<any[]> {
   try {
-    const q = query(
-      collection(firestore, "offerbanners"),
-      orderBy("createdAt", "desc"),
-    );
+    const collectionRef = collection(firestore, "offers", "banners", "images");
+    const q = query(collectionRef, orderBy("createdAt", "desc"));
     const querySnapshot = await getDocs(q);
     const banners: any[] = [];
     querySnapshot.forEach((doc: QueryDocumentSnapshot<unknown>) => {
@@ -1241,7 +1235,7 @@ export async function getOfferBannerImages(): Promise<any[]> {
 
 export async function deleteOfferBanner(bannerId: string): Promise<void> {
   try {
-    const docRef = doc(firestore, "offerbanners", bannerId);
+    const docRef = doc(firestore, "offers", "banners", "images", bannerId);
     await deleteDoc(docRef);
   } catch (error) {
     console.error("Error deleting offer banner:", error);

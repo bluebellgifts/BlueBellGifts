@@ -37,18 +37,32 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
   }>(() => {
     const init: any = {};
     cart.forEach((item) => {
+      // Use existing customization from cart if available
+      const existingCustom = item.customization;
+
       if (
         item.product.customFields?.length ||
+        item.product.customTextFields?.length ||
         item.product.requiredImageFields?.length
       ) {
         const customFieldsInit: any = {};
         const imageFieldsInit: any = {};
 
+        // Prefer cart customization, then initialize if needed
         item.product.customFields?.forEach((field: any) => {
-          customFieldsInit[field.id] = "";
+          customFieldsInit[field.id] =
+            existingCustom?.customFields?.[field.id] || "";
+        });
+
+        item.product.customTextFields?.forEach((field: any) => {
+          customFieldsInit[field.id] =
+            existingCustom?.customTextFields?.[field.id] || "";
         });
 
         item.product.requiredImageFields?.forEach((field: any) => {
+          // Note: Image files can't be stored in cart context easily as strings/previews
+          // but we can at least check if we have data. For simplicity, we initialize new ones
+          // if they are complex, but text should definitely carry over.
           imageFieldsInit[field.id] = { files: [], previews: [] };
         });
 
@@ -379,29 +393,33 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
                     return (
                       <div
                         key={item.product.id}
-                        className="border border-slate-200 rounded-xl p-4 space-y-4"
+                        className="border border-slate-200 rounded-xl p-4 space-y-4 bg-gradient-to-br from-blue-50 to-white"
                       >
-                        {/* Product Header */}
-                        <div className="flex items-center gap-3 pb-4 border-b border-slate-200">
+                        {/* Product Header - More Visible */}
+                        <div className="flex items-center gap-4 pb-4 border-b-2 border-slate-300">
                           <img
                             src={item.product.image}
                             alt={item.product.name}
-                            className="w-12 h-12 rounded-lg object-cover"
+                            className="w-16 h-16 rounded-lg object-cover border-2 border-blue-500 shadow-md"
                           />
-                          <div>
-                            <p className="font-bold text-slate-900 text-sm">
-                              {item.product.name}
+                          <div className="flex-1">
+                            <p className="font-bold text-slate-900 text-base">
+                              Personalization for: {item.product.name}
                             </p>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-sm text-slate-500">
                               Qty: {item.quantity}
                             </p>
                           </div>
                         </div>
 
                         {/* Custom Text Fields */}
-                        {(item.product.customFields?.length ?? 0) > 0 && (
+                        {((item.product.customFields?.length ?? 0) > 0 ||
+                          (item.product.customTextFields?.length ?? 0) > 0) && (
                           <div className="space-y-4">
-                            {item.product.customFields?.map((field: any) => (
+                            {[
+                              ...(item.product.customFields || []),
+                              ...(item.product.customTextFields || []),
+                            ]?.map((field: any) => (
                               <div key={field.id}>
                                 <label className="block text-sm font-medium text-slate-700 mb-2">
                                   {field.label}
@@ -482,15 +500,18 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
                                   {/* Image Previews */}
                                   {custom.imageFields?.[field.id]?.previews
                                     ?.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mb-3">
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 p-3 bg-slate-50 rounded-lg">
                                       {custom.imageFields[
                                         field.id
                                       ].previews.map((preview, index) => (
-                                        <div key={index} className="relative">
+                                        <div
+                                          key={index}
+                                          className="relative group"
+                                        >
                                           <img
                                             src={preview}
                                             alt={`Preview ${index + 1}`}
-                                            className="w-24 h-24 rounded-xl object-cover border-2 border-blue-500"
+                                            className="w-full aspect-square rounded-lg object-cover border-2 border-green-500 shadow-md"
                                           />
                                           <button
                                             onClick={() =>
@@ -500,9 +521,9 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
                                                 index,
                                               )
                                             }
-                                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center"
+                                            className="absolute -top-3 -right-3 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                                           >
-                                            <X size={12} />
+                                            <X size={14} />
                                           </button>
                                         </div>
                                       ))}
@@ -518,10 +539,13 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
                                           `${item.product.id}-${field.id}`
                                         ]?.click()
                                       }
-                                      className="flex items-center justify-center gap-2 border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-xl px-4 py-3 text-sm text-slate-600 hover:text-blue-600 transition-colors w-full"
+                                      className="flex items-center justify-center gap-2 border-2 border-dashed border-blue-400 hover:border-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg px-4 py-3 text-sm font-medium text-blue-600 hover:text-blue-700 transition-all w-full"
                                     >
                                       <Camera size={18} />
-                                      Upload Image ({field.maxImages} max)
+                                      Upload Image (
+                                      {custom.imageFields?.[field.id]?.previews
+                                        ?.length || 0}
+                                      /{field.maxImages})
                                     </button>
                                   )}
 

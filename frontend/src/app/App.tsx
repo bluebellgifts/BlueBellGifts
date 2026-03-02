@@ -5,6 +5,7 @@ import { isProfileComplete } from "./services/firestore-service";
 
 // Customer Components
 import { Navbar } from "./components/customer/Navbar";
+import { OfferScroller } from "./components/customer/OfferScroller";
 import { BottomNavBar } from "./components/customer/BottomNavBar";
 import { HomePage } from "./components/customer/HomePage";
 import { CategoriesPage } from "./components/customer/CategoriesPage";
@@ -124,8 +125,9 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar onNavigate={handleNavigate} currentPage={currentPage.name} />
+      <OfferScroller />
 
-      <main className="flex-1 pb-28 md:pb-0">
+      <main className="flex-1 pb-28 md:pb-0 pt-0">
         {currentPage.name === "home" && (
           <HomePage
             onNavigate={handleNavigate}
@@ -171,7 +173,7 @@ export default function App() {
           <WishlistPage onNavigate={handleNavigate} />
         )}
         {currentPage.name === "login" && (
-          <LoginPage onNavigate={handleNavigate} />
+          <LoginPage onNavigate={handleNavigate} params={currentPage.params} />
         )}
         {currentPage.name === "profile-completion" && (
           <ProfileCompletionPage onNavigate={handleNavigate} />
@@ -182,7 +184,6 @@ export default function App() {
         {currentPage.name === "orders" && (
           <AccountPage onNavigate={handleNavigate} />
         )}
-
         {/* Static Pages */}
         {currentPage.name === "about" && <StaticPage pageId="about" />}
         {currentPage.name === "privacy" && <StaticPage pageId="privacy" />}
@@ -193,7 +194,6 @@ export default function App() {
           <StaticPage pageId="cancellation" />
         )}
         {currentPage.name === "shipping" && <StaticPage pageId="shipping" />}
-
         {currentPage.name === "contact" && <ContactPage />}
       </main>
 

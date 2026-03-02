@@ -110,11 +110,15 @@ export function CartPage({ onNavigate }: CartPageProps) {
                   >
                     <div className="flex gap-3 md:gap-4">
                       {/* Product Image */}
-                      <div className="w-20 h-20 md:w-24 md:h-24 flex-shrink-0">
+                      <div className="w-20 h-20 md:w-24 md:h-24 flex-shrink-0 bg-slate-100 rounded-xl overflow-hidden">
                         <img
-                          src={item.product.image}
+                          src={
+                            item.product.images?.[0]?.url ||
+                            item.product.image ||
+                            "https://via.placeholder.com/150"
+                          }
                           alt={item.product.name}
-                          className="w-full h-full object-cover rounded-xl"
+                          className="w-full h-full object-cover"
                         />
                       </div>
 
@@ -233,7 +237,13 @@ export function CartPage({ onNavigate }: CartPageProps) {
                 <Button
                   variant="primary"
                   className="w-full bg-blue-600 hover:bg-blue-700 h-11 md:h-12 font-semibold flex items-center justify-center gap-2"
-                  onClick={() => onNavigate("checkout")}
+                  onClick={() => {
+                    if (!user) {
+                      onNavigate("login");
+                    } else {
+                      onNavigate("checkout");
+                    }
+                  }}
                 >
                   Proceed to Checkout
                   <ArrowRight size={20} />

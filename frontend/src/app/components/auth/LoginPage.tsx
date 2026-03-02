@@ -11,10 +11,11 @@ import {
 } from "../../services/auth-service";
 
 interface LoginPageProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, params?: any) => void;
+  params?: any;
 }
 
-export function LoginPage({ onNavigate }: LoginPageProps) {
+export function LoginPage({ onNavigate, params }: LoginPageProps) {
   const { setUser } = useApp();
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,6 +25,8 @@ export function LoginPage({ onNavigate }: LoginPageProps) {
     email: "",
     password: "",
   });
+
+  const redirectPage = params?.redirect || "home";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +53,11 @@ export function LoginPage({ onNavigate }: LoginPageProps) {
 
       setUser(user);
       setFormData({ name: "", email: "", password: "" });
-      onNavigate("home");
+      if (redirectPage === "product-detail" && params?.productId) {
+        onNavigate("product-detail", { productId: params.productId });
+      } else {
+        onNavigate(redirectPage);
+      }
     } catch (err: any) {
       setError(err.message || "Authentication failed. Please try again.");
       console.error("Auth error:", err);
@@ -66,7 +73,11 @@ export function LoginPage({ onNavigate }: LoginPageProps) {
     try {
       const user = await signInWithGoogle("customer");
       setUser(user);
-      onNavigate("home");
+      if (redirectPage === "product-detail" && params?.productId) {
+        onNavigate("product-detail", { productId: params.productId });
+      } else {
+        onNavigate(redirectPage);
+      }
     } catch (err: any) {
       setError(err.message || "Google login failed. Please try again.");
       console.error("Google login error:", err);
