@@ -91,8 +91,16 @@ export async function signInWithGoogle(
     const result = await signInWithPopup(auth, provider);
     const firebaseUser = result.user;
 
-    // Create or update user in Firestore
-    const user: User = {
+    // Check if user already exists in Firestore
+    const existingUser = await getUserById(firebaseUser.uid);
+
+    if (existingUser) {
+      // User exists, return their existing profile
+      return existingUser;
+    }
+
+    // User doesn't exist, create a new profile
+    const newUser: User = {
       id: firebaseUser.uid,
       name: firebaseUser.displayName || "User",
       email: firebaseUser.email || "",
@@ -104,9 +112,8 @@ export async function signInWithGoogle(
       profileComplete: false,
     };
 
-    await createOrUpdateUserInFirestore(user);
-
-    return user;
+    await createOrUpdateUserInFirestore(newUser);
+    return newUser;
   } catch (error: any) {
     throw new Error(error.message);
   }

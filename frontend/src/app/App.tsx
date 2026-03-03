@@ -14,6 +14,7 @@ import { ProductDetailPage } from "./components/customer/ProductDetailPage";
 import { CartPage } from "./components/customer/CartPage";
 import { CheckoutPage } from "./components/customer/CheckoutPage";
 import { OrderSuccessPage } from "./components/customer/OrderSuccessPage";
+import { OrderDetailPage } from "./components/customer/OrderDetailPage";
 import { AccountPage } from "./components/customer/AccountPage";
 import { TrackOrderPage } from "./components/customer/TrackOrderPage";
 import { WishlistPage } from "./components/customer/WishlistPage";
@@ -159,6 +160,12 @@ export default function App() {
         )}
         {currentPage.name === "order-success" && (
           <OrderSuccessPage
+            orderId={currentPage.params?.orderId}
+            onNavigate={handleNavigate}
+          />
+        )}
+        {currentPage.name === "order-detail" && (
+          <OrderDetailPage
             orderId={currentPage.params?.orderId}
             onNavigate={handleNavigate}
           />

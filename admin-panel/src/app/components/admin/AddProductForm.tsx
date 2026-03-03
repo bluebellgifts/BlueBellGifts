@@ -263,7 +263,7 @@ export function AddProductForm({
     files.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (event) => {
-        const id = Date.now().toString();
+        const id = Date.now().toString() + Math.random();
         setUploadedImages((prev) => [
           ...prev,
           {

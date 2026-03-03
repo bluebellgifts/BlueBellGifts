@@ -14,6 +14,7 @@ import {
   Upload,
   X,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
@@ -24,6 +25,7 @@ import { ProductCard } from "./ProductCard";
 import { useApp } from "../../context/AppContext";
 import { Product, ProductVariant } from "../../types";
 import { toast } from "sonner";
+import { uploadCustomizationImage } from "../../services/storage-service";
 
 interface ProductDetailPageProps {
   productId: string;
@@ -45,6 +47,9 @@ export function ProductDetailPage({
     Record<string, string[]>
   >({});
   const [showCustomizationForm, setShowCustomizationForm] = useState(false);
+  const [uploadingFields, setUploadingFields] = useState<Set<string>>(
+    new Set(),
+  );
 
   const product = products.find((p) => p.id === productId);
 
@@ -160,27 +165,34 @@ export function ProductDetailPage({
     setShowCustomizationForm(false);
   };
 
-  const handleImageUpload = (fieldId: string, files: FileList | null) => {
+  const handleImageUpload = async (fieldId: string, files: FileList | null) => {
     if (!files) return;
 
-    const urls: string[] = [];
-    let completed = 0;
+    setUploadingFields((prev) => new Set([...prev, fieldId]));
 
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        urls.push(event.target?.result as string);
-        completed++;
+    try {
+      const uploadPromises = Array.from(files).map((file) =>
+        uploadCustomizationImage(product.id, file),
+      );
 
-        if (completed === files.length) {
-          setRequiredImageFieldValues((prev) => ({
-            ...prev,
-            [fieldId]: [...(prev[fieldId] || []), ...urls],
-          }));
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+      const urls = await Promise.all(uploadPromises);
+
+      setRequiredImageFieldValues((prev) => ({
+        ...prev,
+        [fieldId]: [...(prev[fieldId] || []), ...urls],
+      }));
+
+      toast.success(`${files.length} image(s) uploaded successfully!`);
+    } catch (error) {
+      console.error("Error uploading images:", error);
+      toast.error("Failed to upload images. Please try again.");
+    } finally {
+      setUploadingFields((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(fieldId);
+        return newSet;
+      });
+    }
   };
 
   const removeRequiredImage = (fieldId: string, index: number) => {
@@ -507,10 +519,24 @@ export function ProductDetailPage({
                           </Label>
 
                           {/* Upload Area */}
-                          <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-lg p-6 cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
-                            <Upload className="w-8 h-8 text-slate-400 mb-2" />
+                          <label
+                            className={`flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-lg p-6 cursor-pointer transition-colors ${
+                              uploadingFields.has(imageField.id)
+                                ? "opacity-50 cursor-not-allowed border-slate-300"
+                                : "hover:border-blue-500 hover:bg-blue-50"
+                            }`}
+                          >
+                            <Upload
+                              className={`w-8 h-8 mb-2 ${
+                                uploadingFields.has(imageField.id)
+                                  ? "text-slate-300 animate-pulse"
+                                  : "text-slate-400"
+                              }`}
+                            />
                             <span className="text-sm font-medium text-slate-600">
-                              Click to upload
+                              {uploadingFields.has(imageField.id)
+                                ? "Uploading..."
+                                : "Click to upload"}
                             </span>
                             <input
                               type="file"
@@ -519,6 +545,7 @@ export function ProductDetailPage({
                               onChange={(e) =>
                                 handleImageUpload(imageField.id, e.target.files)
                               }
+                              disabled={uploadingFields.has(imageField.id)}
                               className="hidden"
                             />
                           </label>

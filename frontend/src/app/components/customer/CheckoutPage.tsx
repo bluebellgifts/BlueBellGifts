@@ -32,7 +32,13 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
   const [customizations, setCustomizations] = useState<{
     [productId: string]: {
       customFields: { [fieldId: string]: string };
-      imageFields: { [fieldId: string]: { files: File[]; previews: string[] } };
+      imageFields: {
+        [fieldId: string]: {
+          files: File[];
+          previews: string[];
+          savedUrls: string[];
+        };
+      };
     };
   }>(() => {
     const init: any = {};
@@ -60,10 +66,18 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
         });
 
         item.product.requiredImageFields?.forEach((field: any) => {
-          // Note: Image files can't be stored in cart context easily as strings/previews
-          // but we can at least check if we have data. For simplicity, we initialize new ones
-          // if they are complex, but text should definitely carry over.
-          imageFieldsInit[field.id] = { files: [], previews: [] };
+          // Get saved URLs from cart if available
+          const savedUrls =
+            existingCustom?.requiredImageFields?.[field.id] || [];
+          console.log(
+            `📸 Loading images for ${item.product.name} - ${field.label}:`,
+            savedUrls,
+          );
+          imageFieldsInit[field.id] = {
+            files: [],
+            previews: savedUrls, // Use saved URLs as previews
+            savedUrls: savedUrls, // Track which are saved
+          };
         });
 
         init[item.product.id] = {
@@ -72,6 +86,7 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
         };
       }
     });
+    console.log("✓ Checkout customizations initialized:", init);
     return init;
   });
 
@@ -118,6 +133,19 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
     { id: "cod", name: "Cash on Delivery", icon: <Banknote size={24} /> },
   ];
 
+  const getProductImageUrl = (product: any): string => {
+    // Try to get from images array first (primary source)
+    if (product.images && product.images.length > 0) {
+      return product.images[0].url;
+    }
+    // Fallback to image property
+    if (product.image) {
+      return product.image;
+    }
+    // Default placeholder
+    return "https://via.placeholder.com/400x400?text=No+Image";
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -151,16 +179,25 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
     const newFiles = Array.from(files).slice(0, maxImages);
     const previews = newFiles.map((file) => URL.createObjectURL(file));
 
-    setCustomizations((prev) => ({
-      ...prev,
-      [productId]: {
-        ...prev[productId],
-        imageFields: {
-          ...prev[productId].imageFields,
-          [fieldId]: { files: newFiles, previews },
+    setCustomizations((prev) => {
+      const currentData = prev[productId].imageFields[fieldId];
+      const savedUrls = currentData.savedUrls || [];
+
+      return {
+        ...prev,
+        [productId]: {
+          ...prev[productId],
+          imageFields: {
+            ...prev[productId].imageFields,
+            [fieldId]: {
+              files: newFiles,
+              previews: [...savedUrls, ...previews], // Combine saved + new
+              savedUrls, // Keep track of saved
+            },
+          },
         },
-      },
-    }));
+      };
+    });
   };
 
   const removeImageFromField = (
@@ -169,20 +206,53 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
     index: number,
   ) => {
     setCustomizations((prev) => {
-      const currentImages = prev[productId].imageFields[fieldId];
-      return {
-        ...prev,
-        [productId]: {
-          ...prev[productId],
-          imageFields: {
-            ...prev[productId].imageFields,
-            [fieldId]: {
-              files: currentImages.files.filter((_, i) => i !== index),
-              previews: currentImages.previews.filter((_, i) => i !== index),
+      const currentData = prev[productId].imageFields[fieldId];
+      const savedCount = currentData.savedUrls?.length || 0;
+
+      // If removing a saved image (from cart)
+      if (index < savedCount) {
+        const newSavedUrls = currentData.savedUrls.filter(
+          (_, i) => i !== index,
+        );
+        return {
+          ...prev,
+          [productId]: {
+            ...prev[productId],
+            imageFields: {
+              ...prev[productId].imageFields,
+              [fieldId]: {
+                files: currentData.files,
+                previews: [
+                  ...newSavedUrls,
+                  ...currentData.previews.slice(savedCount),
+                ],
+                savedUrls: newSavedUrls,
+              },
             },
           },
-        },
-      };
+        };
+      }
+      // If removing a newly uploaded image
+      else {
+        const newFileIndex = index - savedCount;
+        const newFiles = currentData.files.filter((_, i) => i !== newFileIndex);
+        const newPreviews = currentData.previews.filter((_, i) => i !== index);
+
+        return {
+          ...prev,
+          [productId]: {
+            ...prev[productId],
+            imageFields: {
+              ...prev[productId].imageFields,
+              [fieldId]: {
+                files: newFiles,
+                previews: newPreviews,
+                savedUrls: currentData.savedUrls,
+              },
+            },
+          },
+        };
+      }
     });
   };
 
@@ -197,12 +267,25 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
           const custom = customizations[item.product.id];
           if (!custom) return item;
 
-          // Upload image files
+          // Combine saved and newly uploaded images
           const uploadedImageFields: { [fieldId: string]: string[] } = {};
           for (const [fieldId, imageData] of Object.entries(
             custom.imageFields,
           )) {
             const uploadedUrls: string[] = [];
+
+            // First add the saved URLs (from cart)
+            const savedUrls = imageData.savedUrls || [];
+            uploadedUrls.push(...savedUrls);
+            console.log(
+              `📦 Using saved images for field ${fieldId}:`,
+              savedUrls,
+            );
+
+            // Then upload only new files
+            console.log(
+              `📤 Uploading ${imageData.files.length} new images for field ${fieldId}`,
+            );
             for (let i = 0; i < imageData.files.length; i++) {
               const url = await uploadOrderCustomerPhoto(
                 storagePathId,
@@ -210,13 +293,20 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
                 imageData.files[i],
               );
               uploadedUrls.push(url);
+              console.log(`✓ Uploaded image ${i + 1}:`, url);
             }
             uploadedImageFields[fieldId] = uploadedUrls;
           }
 
+          console.log(
+            `✓ All images ready for ${item.product.name}:`,
+            uploadedImageFields,
+          );
+
           return {
             ...item,
             customization: {
+              ...item.customization,
               customFields: custom.customFields,
               imageFields: uploadedImageFields,
             },
@@ -253,11 +343,12 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
         updatedAt: new Date(),
       };
 
+      console.log("📋 Final order data:", orderData);
       const firestoreOrderId = await createOrder(orderData);
       clearCart();
       onNavigate("order-success", { orderId: firestoreOrderId });
     } catch (error) {
-      console.error("Error placing order:", error);
+      console.error("❌ Error placing order:", error);
       alert("Failed to place order. Please try again.");
     } finally {
       setIsPlacingOrder(false);
@@ -398,7 +489,7 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
                         {/* Product Header - More Visible */}
                         <div className="flex items-center gap-4 pb-4 border-b-2 border-slate-300">
                           <img
-                            src={item.product.image}
+                            src={getProductImageUrl(item.product)}
                             alt={item.product.name}
                             className="w-16 h-16 rounded-lg object-cover border-2 border-blue-500 shadow-md"
                           />
@@ -638,7 +729,7 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
                     return (
                       <div key={item.product.id} className="flex gap-3">
                         <img
-                          src={item.product.image}
+                          src={getProductImageUrl(item.product)}
                           alt={item.product.name}
                           className="w-16 h-16 object-cover rounded-lg"
                         />

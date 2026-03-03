@@ -81,14 +81,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Initialize auth and load user
   useEffect(() => {
     const unsubscribe = getCurrentUser(async (currentUser) => {
+      console.log("🔐 Auth state changed - Current user:", currentUser?.id);
       setUser(currentUser);
       if (currentUser) {
         // Load user's cart from Firestore
         try {
           const userCart = await getUserCart(currentUser.id);
+          console.log("📦 Cart loaded from Firestore:", userCart);
           setCart(userCart);
         } catch (error) {
-          console.error("Error loading cart:", error);
+          console.error("❌ Error loading cart from Firestore:", error);
         }
         // Load user's wishlist from Firestore
         try {
@@ -105,6 +107,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           console.error("Error loading orders:", error);
         }
       } else {
+        console.log("👤 User logged out");
         setCart([]);
         setOrders([]);
         setWishlist([]);
@@ -150,10 +153,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         : [...prevCart, { product, quantity, customization }];
 
       // Save to Firestore if user is logged in
-      if (user) {
-        saveUserCart(user.id, newCart).catch((error) =>
-          console.error("Error saving cart:", error),
-        );
+      if (user && user.id) {
+        saveUserCart(user.id, newCart)
+          .then(() => {
+            console.log("✓ Cart saved to Firestore:", newCart);
+          })
+          .catch((error) => {
+            console.error("✗ Error saving cart to Firestore:", error);
+          });
+      } else {
+        console.warn("⚠ User not logged in - cart not synced to Firestore");
       }
 
       return newCart;
@@ -165,10 +174,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const newCart = prevCart.filter((item) => item.product.id !== productId);
 
       // Save to Firestore if user is logged in
-      if (user) {
-        saveUserCart(user.id, newCart).catch((error) =>
-          console.error("Error saving cart:", error),
-        );
+      if (user && user.id) {
+        saveUserCart(user.id, newCart)
+          .then(() => {
+            console.log("✓ Cart updated in Firestore (item removed):", newCart);
+          })
+          .catch((error) => {
+            console.error("✗ Error saving cart to Firestore:", error);
+          });
+      } else {
+        console.warn("⚠ User not logged in - cart not synced to Firestore");
       }
 
       return newCart;
@@ -187,10 +202,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       );
 
       // Save to Firestore if user is logged in
-      if (user) {
-        saveUserCart(user.id, newCart).catch((error) =>
-          console.error("Error saving cart:", error),
-        );
+      if (user && user.id) {
+        saveUserCart(user.id, newCart)
+          .then(() => {
+            console.log(
+              "✓ Cart updated in Firestore (quantity changed):",
+              newCart,
+            );
+          })
+          .catch((error) => {
+            console.error("✗ Error saving cart to Firestore:", error);
+          });
+      } else {
+        console.warn("⚠ User not logged in - cart not synced to Firestore");
       }
 
       return newCart;

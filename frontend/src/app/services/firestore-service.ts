@@ -540,12 +540,16 @@ export async function saveUserCart(
     // Add new cart items
     for (const item of cartItems) {
       const cartItemRef = doc(userCartRef, item.product.id);
-      await setDoc(cartItemRef, {
+      const cartData = {
         product: item.product,
         quantity: item.quantity,
         customization: item.customization || null,
         addedAt: Timestamp.now(),
-      });
+      };
+
+      console.log(`📦 Saving cart item - ${item.product.name}:`, cartData);
+
+      await setDoc(cartItemRef, cartData);
     }
 
     // Also update the user document with last updated timestamp
@@ -553,8 +557,12 @@ export async function saveUserCart(
     await updateDoc(userRef, {
       cartUpdatedAt: Timestamp.now(),
     });
+
+    console.log(
+      `✓ Cart successfully saved to Firestore - ${cartItems.length} item(s)`,
+    );
   } catch (error) {
-    console.error("Error saving cart:", error);
+    console.error("❌ Error saving cart:", error);
     throw error;
   }
 }

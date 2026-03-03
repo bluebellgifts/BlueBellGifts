@@ -114,6 +114,27 @@ export async function uploadCategoryImage(
   }
 }
 
+export async function uploadCustomizationImage(
+  productId: string,
+  file: File,
+): Promise<string> {
+  try {
+    const timestamp = Date.now();
+    const storageRef = ref(
+      storage,
+      `customizations/${productId}/${timestamp}-${file.name}`,
+    );
+
+    const snapshot = await uploadBytes(storageRef, file);
+    const downloadUrl = await getDownloadURL(snapshot.ref);
+
+    return downloadUrl;
+  } catch (error) {
+    console.error("Error uploading customization image:", error);
+    throw error;
+  }
+}
+
 export async function uploadUserProfileImage(
   userId: string,
   file: File,
