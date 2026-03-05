@@ -77,16 +77,9 @@ export function AdminInventoryPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Action Buttons and Controls */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 md:gap-4">
-        <div>
-          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332]">
-            Inventory Management
-          </h2>
-          <p className="text-xs md:text-sm text-[#64748b] mt-1">
-            Track and manage stock levels
-          </p>
-        </div>
+        <div className="flex-1"></div>
         <div className="flex flex-col sm:flex-row gap-2 md:gap-3 w-full sm:w-auto">
           <Button
             variant="soft"

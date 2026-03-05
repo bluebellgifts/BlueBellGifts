@@ -143,7 +143,7 @@ export default function App() {
           }
         />
         <div className="flex-1 md:ml-72 transition-all duration-300">
-          <AdminHeader />
+          <AdminHeader activePage={currentPage.name} />
           <div className="p-8 max-w-7xl mx-auto">
             {currentPage.name === "admin-dashboard" && <AdminDashboard />}
             {currentPage.name === "admin-products" && <AdminProductsPage />}

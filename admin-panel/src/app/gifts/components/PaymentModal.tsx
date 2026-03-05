@@ -1,18 +1,16 @@
-// Payment Modal Component
+// Payment Modal Component - Modern POS Style
 import React, { useState } from "react";
 import { BillCalculations, PaymentDetails } from "../types";
 import { formatCurrency } from "../utils/calculations";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "../../components/ui/dialog";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { Card } from "../../components/ui/card";
-import { CreditCard, Smartphone } from "lucide-react";
+import {
+  CreditCard,
+  Smartphone,
+  X,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -94,23 +92,39 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const balanceRemaining = calculations.total - totalPaid;
   const isFullyPaid = balanceRemaining <= 0;
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Process Payment</DialogTitle>
-          <DialogDescription>
-            Bill Amount: {formatCurrency(calculations.total)}
-          </DialogDescription>
-        </DialogHeader>
+  if (!isOpen) return null;
 
-        <div className="space-y-4">
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Solid Dark Overlay */}
+      <div className="absolute inset-0 bg-black/60" onClick={onClose}></div>
+
+      {/* Modal Container */}
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-5 flex items-center justify-between rounded-t-2xl">
+          <div>
+            <h2 className="text-xl font-bold">Process Payment</h2>
+            <p className="text-sm text-blue-100 mt-1">
+              Bill Amount: {formatCurrency(calculations.total)}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-5">
           {/* Payment Methods */}
           <div>
-            <label className="block text-sm font-medium mb-2">
-              Payment Method
+            <label className="block text-sm font-bold text-gray-900 mb-3">
+              Select Payment Method
             </label>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+            <div className="grid grid-cols-4 gap-3">
               {paymentMethods.map(({ value, label, icon: Icon }) => (
                 <button
                   key={value}
@@ -118,14 +132,18 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     setPaymentMethod(value);
                     setReference("");
                   }}
-                  className={`p-3 border-2 rounded-lg flex flex-col items-center gap-1 transition-all ${
+                  className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all duration-200 ${
                     paymentMethod === value
-                      ? "border-blue-600 bg-blue-50"
-                      : "border-gray-200 hover:border-gray-300"
+                      ? "border-blue-600 bg-blue-50 ring-2 ring-blue-300"
+                      : "border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-white"
                   }`}
                 >
-                  <Icon className="h-5 w-5" />
-                  <span className="text-xs font-medium text-center">
+                  <Icon
+                    className={`h-6 w-6 ${paymentMethod === value ? "text-blue-600" : "text-gray-600"}`}
+                  />
+                  <span
+                    className={`text-xs font-semibold text-center ${paymentMethod === value ? "text-blue-600" : "text-gray-700"}`}
+                  >
                     {label}
                   </span>
                 </button>
@@ -133,131 +151,156 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             </div>
           </div>
 
-          {/* Amount Input */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Payment Amount
-              </label>
-              <Input
-                type="number"
-                placeholder="0.00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                min="0"
-                step="0.01"
-              />
-            </div>
-
-            {/* Reference Number (for card/bank) */}
-            {["card", "bank"].includes(paymentMethod) && (
+          {/* Amount Input Section */}
+          <div className="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  {paymentMethod === "card"
-                    ? "Card/Transaction #"
-                    : "Reference #"}
+                <label className="block text-xs font-bold text-gray-600 uppercase mb-2">
+                  Payment Amount
                 </label>
                 <Input
-                  type="text"
-                  placeholder="Enter reference number"
-                  value={reference}
-                  onChange={(e) => setReference(e.target.value)}
+                  type="number"
+                  placeholder="0.00"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  min="0"
+                  step="0.01"
+                  className="text-lg font-semibold h-10"
                 />
               </div>
-            )}
+
+              {/* Reference Number */}
+              {["card", "bank"].includes(paymentMethod) && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase mb-2">
+                    {paymentMethod === "card" ? "Card/Trans #" : "Ref #"}
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Enter reference"
+                    value={reference}
+                    onChange={(e) => setReference(e.target.value)}
+                    className="text-sm h-10"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Add Payment Button */}
+            <Button
+              onClick={handleAddPayment}
+              className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all"
+              disabled={isFullyPaid}
+            >
+              {isFullyPaid ? "✓ Payment Complete" : "+ Add Payment"}
+            </Button>
           </div>
 
-          {/* Add Payment Button */}
-          <Button
-            onClick={handleAddPayment}
-            className="w-full bg-blue-600 hover:bg-blue-700"
-            disabled={isFullyPaid}
-          >
-            {isFullyPaid ? "Payment Complete" : "Add Payment"}
-          </Button>
-
-          {/* Applied Payments */}
+          {/* Applied Payments List */}
           {payments.length > 0 && (
-            <Card className="p-4 bg-green-50 border-green-200">
-              <h4 className="font-semibold text-sm mb-3 text-green-700">
-                Payments Recorded
-              </h4>
+            <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <CheckCircle className="w-5 h-5 text-emerald-600" />
+                <h4 className="font-bold text-emerald-900">
+                  Payments Recorded
+                </h4>
+              </div>
               <div className="space-y-2">
                 {payments.map((payment) => (
                   <div
                     key={payment.id}
-                    className="flex items-center justify-between p-2 bg-white rounded border"
+                    className="flex items-center justify-between p-3 bg-white rounded-lg border border-emerald-200"
                   >
                     <div>
-                      <p className="text-sm font-medium capitalize">
+                      <p className="text-sm font-semibold text-gray-900 capitalize">
                         {payment.method}
                       </p>
                       {payment.reference && (
-                        <p className="text-xs text-gray-600">
+                        <p className="text-xs text-gray-500">
                           Ref: {payment.reference}
                         </p>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-emerald-600">
                         {formatCurrency(payment.amount)}
                       </span>
                       <button
                         onClick={() => handleRemovePayment(payment.id)}
-                        className="text-red-600 hover:text-red-700 text-sm"
+                        className="text-gray-400 hover:text-red-600 transition-colors"
                       >
-                        Remove
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
-            </Card>
+            </div>
           )}
 
-          {/* Summary */}
-          <div className="space-y-2 p-4 bg-gray-50 rounded-lg">
-            <div className="flex justify-between text-sm">
-              <span>Bill Total:</span>
-              <span className="font-semibold">
+          {/* Bill Summary */}
+          <div className="space-y-3 bg-white border-2 border-gray-200 rounded-xl p-4">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Bill Total</span>
+              <span className="font-bold text-lg text-gray-900">
                 {formatCurrency(calculations.total)}
               </span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span>Total Paid:</span>
-              <span className="font-semibold text-green-600">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Total Paid</span>
+              <span className="font-bold text-lg text-emerald-600">
                 {formatCurrency(totalPaid)}
               </span>
             </div>
-            <div className="flex justify-between text-sm font-semibold pt-2 border-t">
-              <span>
-                {balanceRemaining > 0 ? "Balance Due:" : "Change Due:"}
+            <div className="h-px bg-gray-200"></div>
+            <div className="flex justify-between items-center">
+              <span
+                className={`text-sm font-semibold ${balanceRemaining > 0 ? "text-red-600" : "text-emerald-600"}`}
+              >
+                {balanceRemaining > 0 ? "Balance Due" : "Change Due"}
               </span>
               <span
-                className={
-                  balanceRemaining > 0 ? "text-orange-600" : "text-green-600"
-                }
+                className={`text-2xl font-bold ${balanceRemaining > 0 ? "text-red-600" : "text-emerald-600"}`}
               >
                 {formatCurrency(Math.abs(balanceRemaining))}
               </span>
             </div>
           </div>
 
+          {/* Warnings */}
+          {balanceRemaining > 0 && payments.length > 0 && (
+            <div className="flex items-start gap-3 bg-amber-50 border-2 border-amber-200 rounded-xl p-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-amber-900">
+                  Partial Payment
+                </p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  Balance of {formatCurrency(balanceRemaining)} will be due
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons */}
-          <div className="flex gap-2">
-            <Button onClick={onClose} variant="outline" className="flex-1">
+          <div className="flex gap-3 pt-2">
+            <Button
+              onClick={onClose}
+              variant="outline"
+              className="flex-1 h-11 font-semibold border-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
               Cancel
             </Button>
             <Button
               onClick={handleComplete}
-              className="flex-1 bg-green-600 hover:bg-green-700"
+              className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={payments.length === 0}
             >
-              {isFullyPaid ? "Complete Sale" : "Allow Partial Payment"}
+              {isFullyPaid ? "✓ Complete Sale" : "Allow Partial"}
             </Button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 };

@@ -28,7 +28,72 @@ import {
 
 const BILLS_COLLECTION = "gifts-bills";
 const PRODUCTS_COLLECTION = "gifts-products";
-const CUSTOMERS_COLLECTION = "gifts-customers";
+const CUSTOMERS_COLLECTION = "users"; // Using main users collection
+const MAIN_PRODUCTS_COLLECTION = "products"; // Main products collection
+
+// Helper function to convert user document to Customer type
+const mapUserToCustomer = (userId: string, userData: any): Customer => {
+  const defaultAddress = userData.addresses?.[0] || {};
+
+  return {
+    id: userId,
+    firstName: userData.firstName || "",
+    lastName: userData.lastName || "",
+    phone: userData.phone || "",
+    email: userData.email || "",
+    address:
+      `${defaultAddress.addressLine1 || ""} ${defaultAddress.addressLine2 || ""}`.trim(),
+    city: defaultAddress.city || "",
+    pincode: defaultAddress.pincode || "",
+    totalPurchases: userData.totalPurchases || 0,
+    totalSpent: userData.totalSpent || 0,
+    lastPurchaseDate: userData.lastPurchaseDate
+      ? new Date(userData.lastPurchaseDate)
+      : undefined,
+    createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
+    updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date(),
+  };
+};
+
+// Helper function to convert main product document to GiftProduct type
+const mapMainProductToGiftProduct = (
+  productId: string,
+  productData: any,
+): GiftProduct => {
+  const variants =
+    productData.variants?.map((variant: any) => ({
+      id: variant.id || `variant-${Math.random()}`,
+      name: variant.name || "",
+      options: variant.name ? [variant.name] : [], // variants are size/type based, use name as option
+      affectsPrice: true,
+      priceModifier:
+        (variant.sellingPrice || 0) - (productData.sellingPrice || 0),
+    })) || [];
+
+  return {
+    id: productId,
+    name: productData.name || "",
+    description: productData.description || "",
+    category: productData.category || "Uncategorized",
+    price: productData.sellingPrice || productData.retailPrice || 0,
+    costPrice: productData.costPrice || 0,
+    taxRate: 18, // Default GST rate (can be updated based on product category)
+    stock: productData.stockQuantity || 0,
+    imageUrl: productData.images?.[0]?.url || "",
+    variants: variants.length > 0 ? variants : undefined,
+    isActive: productData.status === true,
+    createdAt: productData.createdAt
+      ? typeof productData.createdAt === "string"
+        ? new Date(productData.createdAt)
+        : productData.createdAt.toDate?.() || new Date()
+      : new Date(),
+    updatedAt: productData.updatedAt
+      ? typeof productData.updatedAt === "string"
+        ? new Date(productData.updatedAt)
+        : productData.updatedAt.toDate?.() || new Date()
+      : new Date(),
+  };
+};
 
 // ===== BILLS OPERATIONS =====
 
@@ -314,27 +379,16 @@ export const getAllProductsFromFirestore = async (): Promise<GiftProduct[]> => {
  */
 export const getMainProductsForBilling = async (): Promise<GiftProduct[]> => {
   try {
-    const q = query(collection(firestore, "products"));
+    const q = query(
+      collection(firestore, MAIN_PRODUCTS_COLLECTION),
+      where("status", "==", true), // Only fetch active products
+    );
     const querySnapshot = await getDocs(q);
 
     return querySnapshot.docs.map(
       (doc: QueryDocumentSnapshot<DocumentData>) => {
         const data = doc.data();
-        // Convert main Product to GiftProduct format
-        return {
-          id: doc.id,
-          name: data.name || "",
-          description: data.description || "",
-          category: data.category || "Uncategorized",
-          price: data.sellingPrice || data.retailPrice || 0,
-          costPrice: data.costPrice || 0,
-          taxRate: 18, // Default GST rate
-          stock: data.stock || 0,
-          imageUrl: data.image || "",
-          isActive: true,
-          createdAt: data.createdAt?.toDate?.() || new Date(),
-          updatedAt: data.updatedAt?.toDate?.() || new Date(),
-        } as GiftProduct;
+        return mapMainProductToGiftProduct(doc.id, data);
       },
     );
   } catch (error) {
@@ -389,13 +443,41 @@ export const saveCustomerToFirestore = async (
   customer: Customer,
 ): Promise<string> => {
   try {
+    // If customer has an ID that seems to be from the users collection (not temporary), update it
+    if (customer.id && !customer.id.startsWith("cust-")) {
+      // Update existing user document
+      await updateCustomerInFirestore(customer.id, {
+        totalPurchases: customer.totalPurchases,
+        totalSpent: customer.totalSpent,
+        lastPurchaseDate: customer.lastPurchaseDate,
+      });
+      return customer.id;
+    }
+
+    // For new customers (with temporary IDs), add to users collection
     const customerData = {
-      ...customer,
-      lastPurchaseDate: customer.lastPurchaseDate
-        ? Timestamp.fromDate(new Date(customer.lastPurchaseDate))
-        : null,
+      firstName: customer.firstName,
+      lastName: customer.lastName || "",
+      phone: customer.phone,
+      email: customer.email || "",
+      addresses: customer.address
+        ? [
+            {
+              id: `addr-${Date.now()}`,
+              addressLine1: customer.address,
+              addressLine2: "",
+              city: customer.city || "",
+              state: "",
+              pincode: customer.pincode || "",
+              isDefault: true,
+            },
+          ]
+        : [],
+      totalPurchases: customer.totalPurchases || 0,
+      totalSpent: customer.totalSpent || 0,
       createdAt: Timestamp.fromDate(new Date(customer.createdAt)),
       updatedAt: Timestamp.fromDate(new Date(customer.updatedAt)),
+      role: "customer",
     };
 
     const docRef = await addDoc(
@@ -445,15 +527,7 @@ export const getCustomerFromFirestore = async (
     }
 
     const data = customerDoc.data() as any;
-    return {
-      ...data,
-      id: customerDoc.id,
-      lastPurchaseDate: data.lastPurchaseDate
-        ? new Date(data.lastPurchaseDate)
-        : undefined,
-      createdAt: new Date(data.createdAt),
-      updatedAt: new Date(data.updatedAt),
-    } as Customer;
+    return mapUserToCustomer(customerDoc.id, data);
   } catch (error) {
     console.error("Error getting customer from Firestore:", error);
     throw new Error("Failed to retrieve customer");
@@ -465,29 +539,73 @@ export const searchCustomersByPhone = async (
 ): Promise<Customer[]> => {
   try {
     const cleanPhone = phone.replace(/\D/g, "");
-    const q = query(
-      collection(firestore, CUSTOMERS_COLLECTION),
-      where("phone", "==", cleanPhone),
-    );
+
+    // Fetch all users from the users collection
+    const q = query(collection(firestore, CUSTOMERS_COLLECTION));
+    const querySnapshot = await getDocs(q);
+
+    // Filter by phone number that starts with the entered digits
+    return querySnapshot.docs
+      .map((doc: QueryDocumentSnapshot<DocumentData>) => {
+        const data = doc.data() as any;
+        return mapUserToCustomer(doc.id, data);
+      })
+      .filter((customer) =>
+        customer.phone.replace(/\D/g, "").includes(cleanPhone),
+      )
+      .sort((a, b) => {
+        // Prioritize exact matches and then by phone similarity
+        const aPhone = a.phone.replace(/\D/g, "");
+        const bPhone = b.phone.replace(/\D/g, "");
+        if (aPhone === cleanPhone && bPhone !== cleanPhone) return -1;
+        if (aPhone !== cleanPhone && bPhone === cleanPhone) return 1;
+        return 0;
+      });
+  } catch (error) {
+    console.error("Error searching customers by phone:", error);
+    throw new Error("Failed to search customers");
+  }
+};
+
+export const searchCustomersByName = async (
+  name: string,
+): Promise<Customer[]> => {
+  try {
+    const cleanName = name.toLowerCase().trim();
+    const q = query(collection(firestore, CUSTOMERS_COLLECTION));
+    const querySnapshot = await getDocs(q);
+
+    return querySnapshot.docs
+      .map((doc: QueryDocumentSnapshot<DocumentData>) => {
+        const data = doc.data() as any;
+        return mapUserToCustomer(doc.id, data);
+      })
+      .filter(
+        (customer) =>
+          customer.firstName.toLowerCase().includes(cleanName) ||
+          (customer.lastName &&
+            customer.lastName.toLowerCase().includes(cleanName)),
+      );
+  } catch (error) {
+    console.error("Error searching customers by name:", error);
+    throw new Error("Failed to search customers");
+  }
+};
+
+export const getAllCustomers = async (): Promise<Customer[]> => {
+  try {
+    const q = query(collection(firestore, CUSTOMERS_COLLECTION));
     const querySnapshot = await getDocs(q);
 
     return querySnapshot.docs.map(
       (doc: QueryDocumentSnapshot<DocumentData>) => {
         const data = doc.data() as any;
-        return {
-          ...data,
-          id: doc.id,
-          lastPurchaseDate: data.lastPurchaseDate
-            ? new Date(data.lastPurchaseDate)
-            : undefined,
-          createdAt: new Date(data.createdAt),
-          updatedAt: new Date(data.updatedAt),
-        } as Customer;
+        return mapUserToCustomer(doc.id, data);
       },
     );
   } catch (error) {
-    console.error("Error searching customers by phone:", error);
-    throw new Error("Failed to search customers");
+    console.error("Error getting all customers:", error);
+    throw new Error("Failed to retrieve customers");
   }
 };
 

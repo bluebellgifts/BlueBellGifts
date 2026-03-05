@@ -199,17 +199,9 @@ export function AdminInvoicesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex-1">
-          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332]">
-            Invoice Management
-          </h2>
-          <p className="text-xs md:text-sm text-[#64748b] mt-1">
-            Manage all invoices and gift billing
-          </p>
-        </div>
-        {activeTab === "regular" && (
+      {/* Actions */}
+      {activeTab === "regular" && (
+        <div className="flex justify-end">
           <Button
             variant="primary"
             className="w-full sm:w-auto"
@@ -218,8 +210,8 @@ export function AdminInvoicesPage() {
             <Plus width={20} height={20} className="mr-2" />
             Create Invoice
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Combined Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">

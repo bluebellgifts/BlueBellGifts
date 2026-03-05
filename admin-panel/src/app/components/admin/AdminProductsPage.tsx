@@ -79,37 +79,26 @@ export function AdminProductsPage() {
       )}
       {!showAdvancedForm && (
         <>
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex-1">
-              <h2 className="text-xl md:text-2xl font-bold text-[#1a2332]">
-                Product Management
-              </h2>
-              <p className="text-xs md:text-sm text-[#64748b] mt-1">
-                Manage your product catalog
-              </p>
-            </div>
-            <div className="flex gap-2 w-full sm:w-auto">
-              <Button
-                variant="primary"
-                onClick={() => setShowAdvancedForm(true)}
-                className="w-full sm:w-auto"
-              >
-                <Plus size={20} className="mr-2" />
-                Add New Product
-              </Button>
-            </div>
-          </div>
           {/* Search Bar */}
-          <Card className="p-4 md:p-6">
-            <div className="flex-1">
-              <SearchBar
-                value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder="Search products by name or SKU..."
-              />
-            </div>
-          </Card>
+          <div className="mb-6">
+            <Card className="p-4 md:p-6">
+              <div className="flex gap-4 items-center">
+                <SearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Search products by name or SKU..."
+                />
+                <Button
+                  variant="primary"
+                  onClick={() => setShowAdvancedForm(true)}
+                  className="flex-shrink-0"
+                >
+                  <Plus size={20} className="mr-2" />
+                  Add New Product
+                </Button>
+              </div>
+            </Card>
+          </div>
 
           {/* Two Column Layout: Categories (Left) and Products (Right) */}
           <div className="min-h-[600px]">

@@ -51,16 +51,8 @@ export function AdminReportsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332]">
-            Reports & Analytics
-          </h2>
-          <p className="text-xs md:text-sm text-[#64748b] mt-1">
-            View detailed sales and performance reports
-          </p>
-        </div>
+      {/* Export Button */}
+      <div className="flex justify-end">
         <Button variant="primary" className="w-full sm:w-auto">
           <Download size={16} className="mr-2" />
           Export Report

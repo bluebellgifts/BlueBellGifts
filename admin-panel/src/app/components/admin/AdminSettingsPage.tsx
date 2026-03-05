@@ -100,13 +100,8 @@ export function AdminSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Site Settings</h2>
-          <p className="text-muted-foreground">
-            Manage global settings for your store.
-          </p>
-        </div>
+      {/* Save Button */}
+      <div className="flex justify-end">
         <button
           onClick={handleSave}
           disabled={saving}

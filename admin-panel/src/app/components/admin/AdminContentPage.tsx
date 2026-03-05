@@ -161,15 +161,8 @@ export function AdminContentPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            Frontend Management
-          </h2>
-          <p className="text-sm text-gray-500">
-            Manage your website content and business details.
-          </p>
-        </div>
+      {/* Tab Navigation */}
+      <div className="flex justify-end">
         <div className="flex bg-gray-100 p-1 rounded-lg">
           <button
             onClick={() => setActiveTab("pages")}

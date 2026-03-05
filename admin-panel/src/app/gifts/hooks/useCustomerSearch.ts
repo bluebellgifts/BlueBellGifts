@@ -3,13 +3,11 @@ import { useState, useCallback } from "react";
 import { Customer } from "../types";
 import {
   searchCustomersByPhone,
+  searchCustomersByName,
+  getAllCustomers,
   getCustomerFromFirestore,
 } from "../services/giftsFirestoreService";
-import { mockCustomers } from "../data/mockData";
-import {
-  validatePhoneNumber,
-  validateCustomerSearchInput,
-} from "../utils/validations";
+import { validateCustomerSearchInput } from "../utils/validations";
 
 export const useCustomerSearch = () => {
   const [searchResults, setSearchResults] = useState<Customer[]>([]);
@@ -26,8 +24,11 @@ export const useCustomerSearch = () => {
       return;
     }
 
-    if (!validatePhoneNumber(phone)) {
-      setError("Invalid phone number format");
+    // Allow partial phone numbers for search suggestions
+    const cleanPhone = phone.replace(/\D/g, "");
+    if (cleanPhone.length === 0) {
+      setError("Please enter at least one digit");
+      setSearchResults([]);
       return;
     }
 
@@ -35,12 +36,7 @@ export const useCustomerSearch = () => {
     setError(null);
 
     try {
-      // For MVP, using mock data search
-      const cleanPhone = phone.replace(/\D/g, "");
-      const results = mockCustomers.filter((c) => c.phone === cleanPhone);
-
-      // In production, uncomment below:
-      // const results = await searchCustomersByPhone(phone);
+      const results = await searchCustomersByPhone(phone);
 
       setSearchResults(results);
 
@@ -61,7 +57,7 @@ export const useCustomerSearch = () => {
     }
   }, []);
 
-  const searchByName = useCallback((name: string) => {
+  const searchByName = useCallback(async (name: string) => {
     if (!name.trim()) {
       setSearchResults([]);
       return;
@@ -72,18 +68,23 @@ export const useCustomerSearch = () => {
       return;
     }
 
-    const cleanName = name.toLowerCase();
-    const results = mockCustomers.filter(
-      (c) =>
-        c.firstName.toLowerCase().includes(cleanName) ||
-        (c.lastName && c.lastName.toLowerCase().includes(cleanName)),
-    );
-
-    setSearchResults(results);
+    setLoading(true);
     setError(null);
 
-    if (results.length === 0) {
-      setError("No customers found with this name");
+    try {
+      const results = await searchCustomersByName(name);
+
+      setSearchResults(results);
+      setError(null);
+
+      if (results.length === 0) {
+        setError("No customers found with this name");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Search failed");
+      setSearchResults([]);
+    } finally {
+      setLoading(false);
     }
   }, []);
 

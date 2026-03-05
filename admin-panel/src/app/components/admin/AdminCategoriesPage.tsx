@@ -138,16 +138,8 @@ export function AdminCategoriesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex-1">
-          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332]">
-            Category Management
-          </h2>
-          <p className="text-xs md:text-sm text-[#64748b] mt-1">
-            Manage your product categories
-          </p>
-        </div>
+      {/* Action Button */}
+      <div className="flex justify-end">
         <Button
           variant="primary"
           onClick={handleOpenAddModal}

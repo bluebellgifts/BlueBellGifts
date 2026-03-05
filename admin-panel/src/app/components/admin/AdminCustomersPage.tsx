@@ -171,14 +171,6 @@ export function AdminCustomersPage() {
 
   return (
     <div className="space-y-6 w-full max-w-full overflow-hidden">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">
-          Customer Management
-        </h2>
-        <p className="text-muted-foreground">Manage customers and resellers</p>
-      </div>
-
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
