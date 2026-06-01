@@ -1,0 +1,77 @@
+# Robots.txt for Bluebell Gifts
+# This file tells search engines how to crawl and index your site
+# Last Updated: 2026-02-28
+
+# Allow all bots to crawl the site
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin-panel
+Disallow: /api
+Disallow: /.env
+Disallow: /node_modules
+Disallow: /dist
+Disallow: /build
+Disallow: /temp
+Disallow: /*.json$
+Disallow: /*?*sort=
+Disallow: /*?*filter=
+Disallow: /search?
+Disallow: /checkout
+Disallow: /cart
+Disallow: /account
+Disallow: /orders
+Disallow: /wishlist
+Disallow: /login
+Disallow: /register
+Disallow: /profile
+Disallow: /*?utm_source=
+Disallow: /*?utm_medium=
+Disallow: /*?utm_campaign=
+
+# Crawl delay
+Crawl-delay: 1
+
+# Allow Google Bot
+User-agent: Googlebot
+Allow: /
+Disallow: /admin
+Disallow: /api
+Disallow: /cart
+Disallow: /checkout
+
+# Allow Bing Bot
+User-agent: Bingbot
+Allow: /
+Disallow: /admin
+Disallow: /api
+Disallow: /cart
+Disallow: /checkout
+
+# Allow Yandex Bot
+User-agent: YandexBot
+Allow: /
+Disallow: /admin
+Disallow: /api
+
+# Block bad bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+# Sitemap location
+Sitemap: https://bluebellgifts.in/sitemap.xml
+Sitemap: https://bluebellgifts.in/sitemap-products.xml
+Sitemap: https://bluebellgifts.in/sitemap-categories.xml
+
+# Preferred domain (www or non-www)
+# Using non-www version
+# If you're using www, add: https://www.bluebellgifts.in/
