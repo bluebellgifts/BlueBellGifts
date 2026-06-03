@@ -84,7 +84,7 @@ export function ProductDetailPage({
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 mb-20">
           <div className="space-y-4">
             <div className="aspect-[4/5] rounded-3xl overflow-hidden bg-white shadow-xl shadow-slate-200/50 relative group">
-            {productImages[selectedImage] ? (
+              {productImages[selectedImage] ? (
                 <img
                   src={productImages[selectedImage]}
                   alt={product.name}
@@ -204,7 +204,7 @@ export function ProductDetailPage({
                 disabled={isOutOfStock}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white"
               >
-                <MessageCircle size={20} className="mr-2" /> Buy on WhatsApp
+                <MessageCircle size={20} className="mr-2" /> Buy
               </Button>
             </div>
           </div>

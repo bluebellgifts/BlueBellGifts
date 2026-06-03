@@ -19,10 +19,10 @@ export function BottomNavBar({ onNavigate, currentPage }: BottomNavBarProps) {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[100] md:hidden pointer-events-none pb-3 px-3">
-      {/* Premium Minimalist Bottom Navigation */}
-      <nav className="pointer-events-auto bg-white shadow-2xl border border-slate-200 rounded-3xl mx-auto max-w-md overflow-hidden backdrop-blur-sm">
-        <div className="flex items-center justify-around h-16 px-2">
+    <div className="fixed bottom-0 left-0 right-0 z-[100] md:hidden pointer-events-none pb-2 px-3">
+      {/* Premium Bottom Navigation */}
+      <nav className="pointer-events-auto bg-white/95 shadow-2xl border border-slate-100 rounded-3xl mx-auto max-w-md overflow-hidden backdrop-blur-xl">
+        <div className="flex items-center justify-around h-[4.5rem] px-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive =
@@ -33,29 +33,35 @@ export function BottomNavBar({ onNavigate, currentPage }: BottomNavBarProps) {
               <button
                 key={item.path}
                 onClick={() => onNavigate(item.path)}
-                className={`group relative flex-1 h-full flex items-center justify-center rounded-2xl transition-all duration-300 ${
-                  isActive
-                    ? "bg-gradient-to-br from-blue-50 to-blue-50/20"
-                    : "hover:bg-slate-50/50"
+                className={`group relative flex-1 h-full flex flex-col items-center justify-center gap-0.5 rounded-2xl transition-all duration-300 ${
+                  isActive ? "" : "hover:bg-slate-50/60"
                 }`}
               >
                 {/* Icon */}
                 <div
                   className={`
-                  relative p-3 rounded-xl transition-all duration-300
+                  relative p-2 rounded-xl transition-all duration-300
                   ${
                     isActive
-                      ? "bg-blue-600 text-white shadow-lg shadow-blue-300/40"
-                      : "text-slate-500 group-hover:text-blue-600 group-hover:bg-blue-50/50"
+                      ? "bg-blue-600 text-white shadow-lg shadow-blue-400/30 scale-105"
+                      : "text-slate-400 group-hover:text-blue-500 group-hover:bg-blue-50/60"
                   }
                 `}
                 >
                   <Icon
-                    size={isActive ? 24 : 22}
-                    strokeWidth={2.2}
-                    className={`transition-all duration-300`}
+                    size={18}
+                    strokeWidth={isActive ? 2.5 : 2}
+                    className="transition-all duration-300"
                   />
                 </div>
+                {/* Label */}
+                <span
+                  className={`text-[9px] font-semibold tracking-tight leading-none transition-all duration-300 ${
+                    isActive ? "text-blue-600" : "text-slate-400 group-hover:text-blue-500"
+                  }`}
+                >
+                  {item.name === "Deal of the Day" ? "Deals" : item.name}
+                </span>
               </button>
             );
           })}

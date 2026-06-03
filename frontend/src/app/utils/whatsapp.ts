@@ -1,7 +1,7 @@
 import { CartItem, Product } from "../types";
 
 const WHATSAPP_NUMBER =
-  import.meta.env.VITE_WHATSAPP_NUMBER?.replace(/\D/g, "") || "919876543210";
+  import.meta.env.VITE_WHATSAPP_NUMBER?.replace(/\D/g, "") || "918675751157";
 
 export const getSellingPrice = (product: Product) =>
   product.sellingPrice || product.retailPrice || 0;

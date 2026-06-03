@@ -122,24 +122,24 @@ export function CategoriesPage({
       <div className="fixed top-16 left-0 right-0 z-40 bg-white border-b border-slate-200 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           {loading ? (
-            <div className="flex gap-2 overflow-x-auto">
+            <div className="flex gap-2.5 overflow-x-auto scrollbar-hide">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
-                  className="h-20 w-20 bg-slate-100 rounded-lg flex-shrink-0 animate-pulse"
+                  className="h-16 w-16 bg-slate-100 rounded-xl flex-shrink-0 animate-pulse"
                 />
               ))}
             </div>
           ) : (
-            <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory">
+            <div className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-0.5">
               {categories.map((category) => (
                 <button
                   key={category.id}
                   onClick={() => loadCategoryProducts(category)}
-                  className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden transition-all duration-300 snap-center group relative ${
+                  className={`flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden transition-all duration-300 snap-center group relative ${
                     selectedCategory?.id === category.id
-                      ? "ring-2 ring-blue-600 shadow-md"
-                      : "border border-slate-200 hover:shadow-sm"
+                      ? "ring-2 ring-blue-600 shadow-md scale-105"
+                      : "border border-slate-200 hover:shadow-sm hover:scale-[1.03]"
                   }`}
                 >
                   {category.image && (

@@ -211,7 +211,7 @@ export function CartPage({ onNavigate }: CartPageProps) {
                   onClick={() => orderCartOnWhatsApp(cart)}
                 >
                   <MessageCircle size={20} />
-                  Order on WhatsApp
+                  Order
                 </Button>
 
                 <Button

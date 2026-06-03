@@ -59,7 +59,7 @@ export function OfferBannerCarousel() {
 
   if (isLoading) {
     return (
-      <div className="w-full bg-gradient-to-r from-slate-100 to-slate-200 h-48 md:h-80 animate-pulse rounded-xl flex items-center justify-center">
+      <div className="w-full bg-gradient-to-r from-slate-100 to-slate-200 h-44 md:h-72 animate-pulse rounded-2xl flex items-center justify-center">
         <p className="text-slate-500">Loading banners...</p>
       </div>
     );
@@ -70,10 +70,10 @@ export function OfferBannerCarousel() {
   }
 
   return (
-    <div className="w-full bg-white rounded-xl overflow-hidden shadow-lg">
+    <div className="w-full rounded-2xl overflow-hidden shadow-xl ring-1 ring-black/5">
       {/* Main Carousel */}
-      <div className="relative h-48 md:h-80 lg:h-96 overflow-hidden bg-slate-900">
-        {/* Slide */}
+      <div className="relative h-44 md:h-72 lg:h-88 overflow-hidden bg-slate-900">
+        {/* Slides */}
         <div className="relative w-full h-full">
           {banners.map((banner, index) => (
             <div
@@ -91,7 +91,7 @@ export function OfferBannerCarousel() {
           ))}
 
           {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none"></div>
         </div>
 
         {/* Navigation Arrows */}
@@ -101,29 +101,29 @@ export function OfferBannerCarousel() {
               onClick={goToPrevious}
               onMouseEnter={() => setAutoPlayEnabled(false)}
               onMouseLeave={() => setAutoPlayEnabled(true)}
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 hover:bg-white text-slate-900 p-2 rounded-full transition-all duration-200 group"
+              className="absolute left-3 top-1/2 -translate-y-1/2 z-20 bg-white/70 hover:bg-white text-slate-900 p-1.5 rounded-full transition-all duration-200 backdrop-blur-sm shadow-md"
             >
-              <ChevronLeft className="w-6 h-6 group-hover:scale-110 transition-transform" />
+              <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               onClick={goToNext}
               onMouseEnter={() => setAutoPlayEnabled(false)}
               onMouseLeave={() => setAutoPlayEnabled(true)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 hover:bg-white text-slate-900 p-2 rounded-full transition-all duration-200 group"
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-20 bg-white/70 hover:bg-white text-slate-900 p-1.5 rounded-full transition-all duration-200 backdrop-blur-sm shadow-md"
             >
-              <ChevronRight className="w-6 h-6 group-hover:scale-110 transition-transform" />
+              <ChevronRight className="w-4 h-4" />
             </button>
 
             {/* Dot Indicators */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
               {banners.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => goToSlide(index)}
-                  className={`h-2 rounded-full transition-all duration-300 ${
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
                     index === currentIndex
-                      ? "w-8 bg-white"
-                      : "w-2 bg-white/50 hover:bg-white/75"
+                      ? "w-6 bg-white shadow-sm"
+                      : "w-1.5 bg-white/50 hover:bg-white/75"
                   }`}
                   aria-label={`Go to slide ${index + 1}`}
                 />
@@ -132,13 +132,6 @@ export function OfferBannerCarousel() {
           </>
         )}
       </div>
-
-      {/* Counter */}
-      {banners.length > 1 && (
-        <div className="px-4 py-2 bg-slate-50 text-center text-xs text-slate-600">
-          {currentIndex + 1} / {banners.length}
-        </div>
-      )}
     </div>
   );
 }

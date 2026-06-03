@@ -25,9 +25,8 @@ export function OfferScroller() {
   const repeatingText = Array(8).fill(`⭐ ${offerText} `).join("");
 
   return (
-    <div className="bg-white text-slate-800 py-2 md:py-2.5 overflow-hidden shadow-sm border-b border-slate-100">
+    <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 text-white py-1 overflow-hidden">
       <div className="relative flex items-center">
-        {/* Scrolling Text */}
         <div className="flex-1 overflow-hidden">
           <style>{`
             @keyframes scroll {
@@ -44,10 +43,10 @@ export function OfferScroller() {
             }
           `}</style>
           <div className="offer-scroller">
-            <span className="offer-text whitespace-nowrap text-sm md:text-base font-medium">
+            <span className="offer-text whitespace-nowrap text-[10px] md:text-xs font-semibold tracking-wide opacity-95">
               {repeatingText}
             </span>
-            <span className="offer-text whitespace-nowrap text-sm md:text-base font-medium">
+            <span className="offer-text whitespace-nowrap text-[10px] md:text-xs font-semibold tracking-wide opacity-95">
               {repeatingText}
             </span>
           </div>

@@ -51,30 +51,35 @@ export function ProductListPage({ onNavigate }: ProductListPageProps) {
           />
         </div>
 
-        <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
-          <button
-            onClick={() => setSelectedCategory("all")}
-            className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition ${
-              selectedCategory === "all"
-                ? "bg-blue-600 text-white"
-                : "bg-white text-slate-700 border border-slate-200"
-            }`}
-          >
-            All Categories
-          </button>
-          {categories.map((category) => (
+        <div className="mb-6 relative">
+          {/* Fade edges for scroll hint */}
+          <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-[#F9FAFB] to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#F9FAFB] to-transparent z-10 pointer-events-none" />
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide px-1 py-1">
             <button
-              key={category.id}
-              onClick={() => setSelectedCategory(category.id)}
-              className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition ${
-                selectedCategory === category.id
-                  ? "bg-blue-600 text-white"
-                  : "bg-white text-slate-700 border border-slate-200"
+              onClick={() => setSelectedCategory("all")}
+              className={`whitespace-nowrap flex-shrink-0 rounded-full px-5 py-2 text-xs font-semibold transition-all duration-200 ${
+                selectedCategory === "all"
+                  ? "bg-blue-600 text-white shadow-md shadow-blue-200 scale-[1.03]"
+                  : "bg-white text-slate-600 border border-slate-200 hover:border-blue-300 hover:text-blue-600 hover:shadow-sm"
               }`}
             >
-              {category.name}
+              All Categories
             </button>
-          ))}
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => setSelectedCategory(category.id)}
+                className={`whitespace-nowrap flex-shrink-0 rounded-full px-5 py-2 text-xs font-semibold transition-all duration-200 ${
+                  selectedCategory === category.id
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-200 scale-[1.03]"
+                    : "bg-white text-slate-600 border border-slate-200 hover:border-blue-300 hover:text-blue-600 hover:shadow-sm"
+                }`}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
         </div>
 
         {isLoading ? (
