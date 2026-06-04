@@ -9,6 +9,7 @@ import { OfferScroller } from "./components/customer/OfferScroller";
 import { BottomNavBar } from "./components/customer/BottomNavBar";
 import { HomePage } from "./components/customer/HomePage";
 import { CategoriesPage } from "./components/customer/CategoriesPage";
+import { DealOfDayPage } from "./components/customer/DealOfDayPage";
 import { ProductListPage } from "./components/customer/ProductListPage";
 import { ProductDetailPage } from "./components/customer/ProductDetailPage";
 import { CartPage } from "./components/customer/CartPage";
@@ -142,6 +143,13 @@ export default function App() {
             sortBy={sortBy}
           />
         )}
+        {currentPage.name === "deals" && (
+          <DealOfDayPage
+            onNavigate={handleNavigate}
+            filters={filters}
+            sortBy={sortBy}
+          />
+        )}
         {currentPage.name === "products" && (
           <ProductListPage onNavigate={handleNavigate} />
         )}
@@ -203,8 +211,10 @@ export default function App() {
         {currentPage.name === "contact" && <ContactPage />}
       </main>
 
-      {/* Filter Trigger Button - Only for Home and Categories */}
-      {(currentPage.name === "home" || currentPage.name === "categories") && (
+      {/* Filter Trigger Button - Only for Home, Categories and Deals */}
+      {(currentPage.name === "home" ||
+        currentPage.name === "categories" ||
+        currentPage.name === "deals") && (
         <>
           <FilterTrigger
             onClick={() => {

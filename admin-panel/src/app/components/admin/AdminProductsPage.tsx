@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Edit, Trash2, X } from "lucide-react";
+import { Plus, Edit, Trash2, X, Zap } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import {
@@ -13,6 +13,7 @@ import {
 import { SearchBar } from "../ui/SearchBar";
 import { useApp } from "../../context/AppContext";
 import { adminDeleteProduct } from "../../services/admin-service";
+import { updateProduct } from "../../services/firestore-service";
 import { toast } from "sonner";
 import { AddProductForm } from "./AddProductForm";
 
@@ -21,6 +22,7 @@ export function AdminProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showAdvancedForm, setShowAdvancedForm] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [togglingDeal, setTogglingDeal] = useState<string | null>(null);
   const rightScrollRef = useRef<HTMLDivElement>(null);
 
   const filteredProducts = (products || []).filter((product) => {
@@ -36,6 +38,23 @@ export function AdminProductsPage() {
       } catch (error: any) {
         toast.error(error.message || "Failed to delete product");
       }
+    }
+  };
+
+  const handleToggleDealOfDay = async (product: any) => {
+    try {
+      setTogglingDeal(product.id);
+      const newStatus = !product.onOffer;
+      await updateProduct(product.id, { onOffer: newStatus });
+      toast.success(
+        newStatus
+          ? "Product added to Deal of the Day"
+          : "Product removed from Deal of the Day",
+      );
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update product");
+    } finally {
+      setTogglingDeal(null);
     }
   };
 
@@ -82,7 +101,7 @@ export function AdminProductsPage() {
                 <SearchBar
                   value={searchQuery}
                   onChange={setSearchQuery}
-                    placeholder="Search products by name..."
+                  placeholder="Search products by name..."
                 />
                 <Button
                   variant="primary"
@@ -165,7 +184,23 @@ export function AdminProductsPage() {
                               ₹{product.sellingPrice || 0}
                             </TableCell>
                             <TableCell>
-                              <div className="flex gap-1">
+                              <div className="flex gap-1 flex-wrap">
+                                <button
+                                  onClick={() => handleToggleDealOfDay(product)}
+                                  disabled={togglingDeal === product.id}
+                                  className={`p-1.5 sm:p-2 rounded-lg transition-colors flex-shrink-0 ${
+                                    product.onOffer
+                                      ? "bg-yellow-100 text-yellow-600 hover:bg-yellow-200"
+                                      : "hover:bg-yellow-50 text-gray-400 hover:text-yellow-600"
+                                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                  title={
+                                    product.onOffer
+                                      ? "Remove from Deal of the Day"
+                                      : "Add to Deal of the Day"
+                                  }
+                                >
+                                  <Zap size={16} />
+                                </button>
                                 <button
                                   onClick={() => {
                                     setEditingProductId(product.id);

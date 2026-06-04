@@ -78,11 +78,7 @@ export function CategoriesPage({
             sellingPrice > filters.maxPrice
           )
             return false;
-          if (
-            filters.categories.length > 0 &&
-            !filters.categories.includes(product.category || "")
-          )
-            return false;
+          // Skip category filter since products are already filtered by selected category from DB
           if (filters.ratings.length > 0) {
             const minRating = Math.min(...filters.ratings);
             if ((product.rating ?? 0) < minRating) return false;

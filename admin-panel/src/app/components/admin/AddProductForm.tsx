@@ -16,8 +16,10 @@ interface ProductFormData {
   name: string;
   retailPrice: number | "";
   sellingPrice: number | "";
+  offerPrice: number | "";
   description: string;
   category: string;
+  onOffer?: boolean;
 }
 
 interface Category {
@@ -80,8 +82,10 @@ export function AddProductForm({
     name: "",
     retailPrice: "",
     sellingPrice: "",
+    offerPrice: "",
     description: "",
     category: "",
+    onOffer: false,
   });
   const [uploadedImages, setUploadedImages] = useState<ProductImageDraft[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -113,8 +117,10 @@ export function AddProductForm({
       name: editingProduct.name || "",
       retailPrice: editingProduct.retailPrice ?? "",
       sellingPrice: editingProduct.sellingPrice ?? "",
+      offerPrice: editingProduct.offerPrice ?? "",
       description: editingProduct.description || "",
       category: editingProduct.category || "",
+      onOffer: editingProduct.onOffer || false,
     });
 
     if (Array.isArray(editingProduct.images)) {
@@ -197,6 +203,10 @@ export function AddProductForm({
       newErrors.images = "At least one image is required";
     }
 
+    if (!formData.category) {
+      newErrors.category = "Category is required";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -206,8 +216,10 @@ export function AddProductForm({
       name: "",
       retailPrice: "",
       sellingPrice: "",
+      offerPrice: "",
       description: "",
       category: "",
+      onOffer: false,
     });
     setUploadedImages([]);
     setErrors({});
@@ -223,7 +235,7 @@ export function AddProductForm({
     const productData: Record<string, unknown> = {
       name,
       slug: existing.slug || generateSlug(name),
-      category: existing.category || "",
+      category: formData.category || existing.category || "",
       description: formData.description || existing.description || name,
       costPrice: existing.costPrice ?? 0,
       retailPrice: mrpPrice,
@@ -236,6 +248,10 @@ export function AddProductForm({
       shippingTamilNadu: existing.shippingTamilNadu ?? 0,
       shippingRestOfIndia: existing.shippingRestOfIndia ?? 0,
       freeShipping: existing.freeShipping ?? false,
+      onOffer: formData.onOffer || existing.onOffer || false,
+      offerPrice: formData.offerPrice
+        ? Number(formData.offerPrice)
+        : (existing.offerPrice ?? undefined),
       image: imageUrls[0]?.url || existing.image || "",
       images: imageUrls,
       videos: existing.videos || [],
@@ -374,6 +390,28 @@ export function AddProductForm({
                 </p>
               )}
             </div>
+
+            <div>
+              <Label className="text-gray-700 font-medium text-sm">
+                Offer Price (Rs.)
+              </Label>
+              <Input
+                type="number"
+                min="0"
+                value={formData.offerPrice}
+                onChange={(e) =>
+                  handleInputChange(
+                    "offerPrice",
+                    e.target.value ? Number(e.target.value) : "",
+                  )
+                }
+                placeholder="Enter offer price (optional)"
+                className="mt-2"
+              />
+              <p className="text-gray-500 text-xs mt-1">
+                Leave empty if no special offer
+              </p>
+            </div>
           </div>
 
           <div className="mt-4">
@@ -424,6 +462,24 @@ export function AddProductForm({
                 <AlertCircle className="w-4 h-4" /> {errors.category}
               </p>
             )}
+          </div>
+
+          <div className="mt-4 flex items-center gap-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+            <input
+              type="checkbox"
+              id="dealOfDay"
+              checked={formData.onOffer || false}
+              onChange={(e) =>
+                handleInputChange("onOffer" as any, e.target.checked)
+              }
+              className="w-5 h-5 text-yellow-600 rounded focus:ring-2 focus:ring-yellow-500 cursor-pointer"
+            />
+            <Label
+              htmlFor="dealOfDay"
+              className="text-gray-700 font-medium text-sm cursor-pointer flex-1 mb-0"
+            >
+              Mark as Deal of the Day
+            </Label>
           </div>
         </Card>
 
