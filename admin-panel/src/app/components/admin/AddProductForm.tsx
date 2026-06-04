@@ -5,13 +5,25 @@ import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { createProduct, updateProduct } from "../../services/firestore-service";
+import {
+  createProduct,
+  updateProduct,
+  getCategories,
+} from "../../services/firestore-service";
 import { uploadFile } from "../../services/storage-service";
 
 interface ProductFormData {
   name: string;
   retailPrice: number | "";
   sellingPrice: number | "";
+  description: string;
+  category: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  [key: string]: any;
 }
 
 interface ProductImageDraft {
@@ -68,10 +80,31 @@ export function AddProductForm({
     name: "",
     retailPrice: "",
     sellingPrice: "",
+    description: "",
+    category: "",
   });
   const [uploadedImages, setUploadedImages] = useState<ProductImageDraft[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setLoadingCategories(true);
+      try {
+        const cats = await getCategories();
+        setCategories(cats);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        toast.error("Failed to load categories");
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   useEffect(() => {
     if (!editingProduct) return;
@@ -80,6 +113,8 @@ export function AddProductForm({
       name: editingProduct.name || "",
       retailPrice: editingProduct.retailPrice ?? "",
       sellingPrice: editingProduct.sellingPrice ?? "",
+      description: editingProduct.description || "",
+      category: editingProduct.category || "",
     });
 
     if (Array.isArray(editingProduct.images)) {
@@ -127,7 +162,11 @@ export function AddProductForm({
       const currentIndex = prev.findIndex((image) => image.id === id);
       const targetIndex = currentIndex + direction;
 
-      if (currentIndex === -1 || targetIndex < 0 || targetIndex >= prev.length) {
+      if (
+        currentIndex === -1 ||
+        targetIndex < 0 ||
+        targetIndex >= prev.length
+      ) {
         return prev;
       }
 
@@ -167,6 +206,8 @@ export function AddProductForm({
       name: "",
       retailPrice: "",
       sellingPrice: "",
+      description: "",
+      category: "",
     });
     setUploadedImages([]);
     setErrors({});
@@ -183,7 +224,7 @@ export function AddProductForm({
       name,
       slug: existing.slug || generateSlug(name),
       category: existing.category || "",
-      description: existing.description || name,
+      description: formData.description || existing.description || name,
       costPrice: existing.costPrice ?? 0,
       retailPrice: mrpPrice,
       sellingPrice,
@@ -299,9 +340,7 @@ export function AddProductForm({
                   )
                 }
                 placeholder="Enter MRP price"
-                className={`mt-2 ${
-                  errors.retailPrice ? "border-red-500" : ""
-                }`}
+                className={`mt-2 ${errors.retailPrice ? "border-red-500" : ""}`}
               />
               {errors.retailPrice && (
                 <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
@@ -335,6 +374,56 @@ export function AddProductForm({
                 </p>
               )}
             </div>
+          </div>
+
+          <div className="mt-4">
+            <Label className="text-gray-700 font-medium text-sm">
+              Description
+            </Label>
+            <textarea
+              value={formData.description}
+              onChange={(e) =>
+                handleInputChange("description" as any, e.target.value)
+              }
+              placeholder="Enter product description"
+              rows={4}
+              className={`w-full mt-2 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${
+                errors.description ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {errors.description && (
+              <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" /> {errors.description}
+              </p>
+            )}
+          </div>
+
+          <div className="mt-4">
+            <Label className="text-gray-700 font-medium text-sm">
+              Category
+            </Label>
+            <select
+              value={formData.category}
+              onChange={(e) =>
+                handleInputChange("category" as any, e.target.value)
+              }
+              className={`w-full mt-2 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.category ? "border-red-500" : "border-gray-300"
+              }`}
+              disabled={loadingCategories}
+            >
+              <option value="">Select a category</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+            {errors.category && (
+              <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" /> {errors.category}
+              </p>
+            )}
           </div>
         </Card>
 
