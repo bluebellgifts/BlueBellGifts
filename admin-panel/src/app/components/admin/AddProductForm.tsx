@@ -9,6 +9,8 @@ import {
   createProduct,
   updateProduct,
   getCategories,
+  incrementProductCountByName,
+  decrementProductCountByName,
 } from "../../services/firestore-service";
 import { uploadFile } from "../../services/storage-service";
 
@@ -296,10 +298,22 @@ export function AddProductForm({
       const productData = buildProductData(uploadedImageUrls);
 
       if (productId) {
+        // Handle category change for updates
+        if (editingProduct && editingProduct.category !== formData.category) {
+          await decrementProductCountByName(editingProduct.category);
+          await incrementProductCountByName(formData.category);
+        }
+
         await updateProduct(productId, productData as any);
         toast.success("Product updated successfully");
       } else {
         await createProduct(productData as any);
+
+        // Increment product count in category
+        if (formData.category) {
+          await incrementProductCountByName(formData.category);
+        }
+
         toast.success("Product saved successfully");
         resetForm();
       }
