@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Eye, Download, Filter, ChevronDown, FileDown } from "lucide-react";
+import {
+  Eye,
+  Download,
+  Filter,
+  ChevronDown,
+  FileDown,
+  Clock,
+  Trash2,
+} from "lucide-react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import {
@@ -33,6 +41,21 @@ const STATUS_TABS = [
   { id: "cancelled", label: "Cancelled", color: "#EF4444" },
 ];
 
+interface Activity {
+  id: string;
+  timestamp: Date;
+  type: "view" | "status-change" | "download" | "error";
+  orderID: string;
+  details: string;
+  icon: string;
+}
+
+interface Toast {
+  id: string;
+  message: string;
+  type: "success" | "info" | "error";
+}
+
 export function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [selectedTab, setSelectedTab] = useState("pending");
@@ -40,6 +63,9 @@ export function AdminOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [statusDropdown, setStatusDropdown] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [showActivityPanel, setShowActivityPanel] = useState(true);
 
   // Fetch orders from Firestore
   useEffect(() => {
@@ -115,6 +141,54 @@ export function AdminOrdersPage() {
     });
   };
 
+  // Add toast notification
+  const addToast = (
+    message: string,
+    type: "success" | "info" | "error" = "info",
+  ) => {
+    const id = Date.now().toString();
+    const toast: Toast = { id, message, type };
+    setToasts((prev) => [...prev, toast]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3000);
+  };
+
+  // Log activity
+  const logActivity = (
+    type: "view" | "status-change" | "download" | "error",
+    orderID: string,
+    details: string,
+    icon: string,
+  ) => {
+    const activity: Activity = {
+      id: Date.now().toString(),
+      timestamp: new Date(),
+      type,
+      orderID,
+      details,
+      icon,
+    };
+    setActivities((prev) => [activity, ...prev].slice(0, 20)); // Keep last 20 activities
+  };
+
+  // Format time for activity
+  const formatActivityTime = (date: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+
+    if (seconds < 60) return "just now";
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    return date.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   // Download customization as ZIP
   const downloadCustomizationAsZip = async (item: any, itemIndex: number) => {
     try {
@@ -165,9 +239,24 @@ export function AdminOrdersPage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+
+      // Log activity
+      logActivity(
+        "download",
+        selectedOrder.id,
+        `Downloaded customization for "${item.product?.name}" (Item ${itemIndex + 1})`,
+        "📥",
+      );
+      addToast(`✓ Customization downloaded: ${item.product?.name}`, "success");
     } catch (error) {
       console.error("Error downloading customization:", error);
-      alert("Failed to download customization");
+      logActivity(
+        "error",
+        selectedOrder?.id || "unknown",
+        "Failed to download customization",
+        "❌",
+      );
+      addToast("Failed to download customization", "error");
     }
   };
 
@@ -191,18 +280,147 @@ export function AdminOrdersPage() {
       );
       await updateDoc(userOrderRef, { status: newStatus });
 
+      // Log activity
+      const oldStatus = targetOrder.status;
+      logActivity(
+        "status-change",
+        targetOrder.id,
+        `Order status changed: ${oldStatus} → ${newStatus} | Customer: ${targetOrder.customerName}`,
+        "🔄",
+      );
+      addToast(
+        `✓ Order status updated: ${oldStatus} → ${newStatus}`,
+        "success",
+      );
+
       if (selectedOrder?.id === targetOrder.id) {
         setSelectedOrder(null);
       }
-      alert("✓ Order status updated in both orders & user collections!");
     } catch (error) {
       console.error("Error updating order:", error);
-      alert("Failed to update order status");
+      logActivity(
+        "error",
+        targetOrder.id,
+        "Failed to update order status",
+        "❌",
+      );
+      addToast("Failed to update order status", "error");
     }
   };
 
   return (
     <div className="space-y-6">
+      {/* Toast Notifications */}
+      <div className="fixed top-4 right-4 z-50 space-y-2 pointer-events-none">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`animate-in fade-in slide-in-from-right-10 duration-300 p-4 rounded-lg text-sm font-medium shadow-lg pointer-events-auto ${
+              toast.type === "success"
+                ? "bg-green-50 text-green-800 border border-green-200"
+                : toast.type === "error"
+                  ? "bg-red-50 text-red-800 border border-red-200"
+                  : "bg-blue-50 text-blue-800 border border-blue-200"
+            }`}
+          >
+            {toast.message}
+          </div>
+        ))}
+      </div>
+
+      {/* Activity Panel Toggle */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-[#1a2332]">
+          Orders Management
+        </h2>
+        <button
+          onClick={() => setShowActivityPanel(!showActivityPanel)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+            showActivityPanel
+              ? "bg-[#1e40af] text-white"
+              : "bg-[#f3f4f6] text-[#1a2332] hover:bg-[#e5e7eb]"
+          }`}
+        >
+          <Clock size={18} />
+          <span className="text-sm font-medium">Activity Feed</span>
+          {activities.length > 0 && (
+            <span className="ml-1 px-2 py-0.5 bg-white/20 rounded-full text-xs">
+              {activities.length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Activity Panel */}
+      {showActivityPanel && activities.length > 0 && (
+        <Card className="border-l-4 border-l-[#1e40af] bg-gradient-to-r from-[#eff6ff] to-white p-4">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h3 className="font-semibold text-[#1a2332] text-sm">
+                Recent Activity
+              </h3>
+              <p className="text-xs text-[#64748b] mt-1">
+                All clicks and interactions on orders
+              </p>
+            </div>
+            <button
+              onClick={() => setActivities([])}
+              className="p-1 hover:bg-red-100 text-red-600 rounded transition-colors"
+              title="Clear activity"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {activities.map((activity) => (
+              <div
+                key={activity.id}
+                className="p-3 bg-white rounded-lg border border-[#e5e7eb] hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-lg">{activity.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-[#1a2332] break-words">
+                          {activity.details}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className="text-xs px-2 py-1 bg-[#eff6ff] text-[#1e40af] rounded font-mono">
+                            #{activity.orderID.substring(0, 8).toUpperCase()}
+                          </span>
+                          <span
+                            className={`text-xs px-2 py-1 rounded font-medium ${
+                              activity.type === "view"
+                                ? "bg-blue-100 text-blue-700"
+                                : activity.type === "status-change"
+                                  ? "bg-purple-100 text-purple-700"
+                                  : activity.type === "download"
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-red-100 text-red-700"
+                            }`}
+                          >
+                            {activity.type === "view"
+                              ? "View"
+                              : activity.type === "status-change"
+                                ? "Status Updated"
+                                : activity.type === "download"
+                                  ? "Download"
+                                  : "Error"}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-xs text-[#64748b] font-medium whitespace-nowrap">
+                        {formatActivityTime(activity.timestamp)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
       {/* Status Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-2">
         {STATUS_TABS.map((tab) => {
@@ -246,10 +464,27 @@ export function AdminOrdersPage() {
             <p className="text-[#64748b]">Loading orders...</p>
           </div>
         ) : filteredOrders.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-[#64748b]">
-              No orders found in {selectedTab} status
+          <div className="p-8 text-center space-y-4">
+            <div className="text-5xl mb-4">📱</div>
+            <p className="text-[#64748b] font-medium">
+              No orders found in <strong>{selectedTab}</strong> status
             </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4 max-w-md mx-auto">
+              <p className="text-sm text-blue-900 font-medium mb-2">
+                📢 WhatsApp Sharing Method
+              </p>
+              <p className="text-xs text-blue-800">
+                Your store has been updated to use WhatsApp sharing for orders.
+                Traditional orders will appear here when received through the
+                platform.
+              </p>
+            </div>
+            {orders.length === 0 && (
+              <p className="text-xs text-[#94a3b8] mt-4">
+                All status tabs are empty • Every order interaction will be
+                logged in the Activity Feed above
+              </p>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -342,7 +577,19 @@ export function AdminOrdersPage() {
                     </TableCell>
                     <TableCell>
                       <button
-                        onClick={() => setSelectedOrder(order)}
+                        onClick={() => {
+                          setSelectedOrder(order);
+                          logActivity(
+                            "view",
+                            order.id,
+                            `Opened order details | Customer: ${order.customerName} | Items: ${order.items?.length || 0} | Amount: ₹${order.total?.toFixed(0) || 0}`,
+                            "👁️",
+                          );
+                          addToast(
+                            `Viewing order #${order.id.substring(0, 8).toUpperCase()}`,
+                            "info",
+                          );
+                        }}
                         className="p-1.5 sm:p-2 hover:bg-[#eff6ff] text-[#1e40af] rounded-lg transition-colors"
                         title="View Details"
                       >
