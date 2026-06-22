@@ -153,6 +153,9 @@ export function AdminProductsPage() {
                           <TableHead className="min-w-[100px]">
                             Selling Price
                           </TableHead>
+                          <TableHead className="min-w-[80px]">
+                            Stock
+                          </TableHead>
                           <TableHead className="min-w-[70px]">
                             Actions
                           </TableHead>
@@ -182,6 +185,24 @@ export function AdminProductsPage() {
                             </TableCell>
                             <TableCell className="text-xs sm:text-sm font-semibold text-blue-700">
                               ₹{product.sellingPrice || 0}
+                            </TableCell>
+                            <TableCell>
+                              {(() => {
+                                const qty = product.stock ?? product.stockQuantity ?? 0;
+                                const cls =
+                                  qty === 0
+                                    ? "bg-red-100 text-red-700"
+                                    : qty < 10
+                                      ? "bg-amber-100 text-amber-700"
+                                      : "bg-emerald-100 text-emerald-700";
+                                return (
+                                  <span
+                                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls}`}
+                                  >
+                                    {qty === 0 ? "Out" : qty}
+                                  </span>
+                                );
+                              })()}
                             </TableCell>
                             <TableCell>
                               <div className="flex gap-1 flex-wrap">

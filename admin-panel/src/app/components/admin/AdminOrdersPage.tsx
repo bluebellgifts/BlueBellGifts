@@ -84,13 +84,14 @@ export function AdminOrdersPage() {
     return () => unsubscribe();
   }, []);
 
-  // Filter orders by tab and search
+  // Filter orders by tab and search (guard against missing fields for WhatsApp/guest orders)
   const filteredOrders = orders.filter((order) => {
     const matchesTab = order.status === selectedTab;
+    const q = searchQuery.toLowerCase();
     const matchesSearch =
-      order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customerPhone.includes(searchQuery);
+      (order.id ?? "").toLowerCase().includes(q) ||
+      (order.customerName ?? "").toLowerCase().includes(q) ||
+      (order.customerPhone ?? "").includes(searchQuery);
     return matchesTab && matchesSearch;
   });
 

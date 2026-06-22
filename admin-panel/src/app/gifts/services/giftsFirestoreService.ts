@@ -77,7 +77,8 @@ const mapMainProductToGiftProduct = (
     category: productData.category || "All Products",
     price: productData.sellingPrice || productData.retailPrice || 0,
     costPrice: productData.costPrice || 0,
-    taxRate: 18, // Default GST rate (can be updated based on product category)
+    // Use the product's own taxRate; fall back to 0 so GST is never applied silently
+    taxRate: productData.taxRate ?? productData.gstRate ?? 0,
     stock: productData.stockQuantity ?? productData.stock ?? 999,
     imageUrl: productData.images?.[0]?.url || productData.image || "",
     variants: variants.length > 0 ? variants : undefined,
@@ -99,13 +100,35 @@ const mapMainProductToGiftProduct = (
 
 export const saveBillToFirestore = async (bill: Bill): Promise<string> => {
   try {
-    const billData = {
+    // Build a Firestore-safe copy: convert all Date/undefined fields explicitly.
+    // Firestore throws "Unsupported field value: undefined" if undefined values
+    // reach it via spread (e.g. PaymentDetails.reference when paying by cash).
+    const safePaymentDetails = (bill.paymentDetails ?? []).map((p) => {
+      const entry: Record<string, unknown> = {
+        id: p.id,
+        method: p.method,
+        amount: p.amount,
+        timestamp: Timestamp.fromDate(new Date(p.timestamp)),
+      };
+      if (p.reference !== undefined) entry.reference = p.reference;
+      if (p.transactionId !== undefined) entry.transactionId = p.transactionId;
+      return entry;
+    });
+
+    const billData: Record<string, unknown> = {
       ...bill,
       billDate: Timestamp.fromDate(new Date(bill.billDate)),
       dueDate: bill.dueDate ? Timestamp.fromDate(new Date(bill.dueDate)) : null,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
+      paymentDetails: safePaymentDetails,
     };
+
+    // Remove top-level optional fields that were not provided
+    for (const key of ["notes", "customerId", "customerDetails", "pdfUrl", "paymentMode"] as const) {
+      if (billData[key] === undefined) delete billData[key];
+    }
+    if (billData.dueDate === null) delete billData.dueDate;
 
     const docRef = await addDoc(
       collection(firestore, BILLS_COLLECTION),
@@ -114,7 +137,9 @@ export const saveBillToFirestore = async (bill: Bill): Promise<string> => {
     return docRef.id;
   } catch (error) {
     console.error("Error saving bill to Firestore:", error);
-    throw new Error("Failed to save bill");
+    throw new Error(
+      error instanceof Error ? error.message : "Failed to save bill",
+    );
   }
 };
 

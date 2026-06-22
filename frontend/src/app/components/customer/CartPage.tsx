@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   ArrowLeft,
   MessageCircle,
@@ -14,18 +14,63 @@ import {
   getSellingPrice,
   orderCartOnWhatsApp,
 } from "../../utils/whatsapp";
+import { createOrder } from "../../services/firestore-service";
+import { Address } from "../../types";
 
 interface CartPageProps {
   onNavigate: (page: string) => void;
 }
 
 export function CartPage({ onNavigate }: CartPageProps) {
-  const { cart, updateCartQuantity, removeFromCart } = useApp();
+  const { cart, updateCartQuantity, removeFromCart, user } = useApp();
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
 
   const subtotal = cart.reduce(
     (sum, item) => sum + getSellingPrice(item.product) * item.quantity,
     0,
   );
+
+  // Save a pending order to Firestore so it appears in the admin Pending Orders
+  // list, then open WhatsApp so the customer can confirm with the shop.
+  const handleWhatsAppOrder = async () => {
+    setIsSavingOrder(true);
+    try {
+      const defaultAddress: Address =
+        user?.addresses?.find((a) => a.isDefault) ??
+        user?.addresses?.[0] ?? {
+          id: "whatsapp-placeholder",
+          name: user?.name ?? "WhatsApp Customer",
+          phone: user?.phone ?? "",
+          addressLine1: "To be confirmed via WhatsApp",
+          city: "",
+          state: "",
+          pincode: "",
+          isDefault: false,
+        };
+
+      await createOrder({
+        customerId: user?.id ?? "guest",
+        customerName: user?.name ?? "WhatsApp Customer",
+        customerEmail: user?.email ?? "",
+        customerPhone: user?.phone ?? "",
+        items: cart,
+        total: subtotal,
+        status: "pending",
+        paymentMethod: "whatsapp",
+        shippingAddress: defaultAddress,
+        orderType: "online",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        hasCustomizations: cart.some((item) => !!item.customization),
+      });
+    } catch (error) {
+      // Don't block WhatsApp from opening if the Firestore save fails
+      console.error("Failed to save WhatsApp order to Firestore:", error);
+    } finally {
+      setIsSavingOrder(false);
+    }
+    orderCartOnWhatsApp(cart);
+  };
 
   if (cart.length === 0) {
     return (
@@ -207,11 +252,12 @@ export function CartPage({ onNavigate }: CartPageProps) {
               <div className="space-y-2">
                 <Button
                   variant="primary"
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 h-11 md:h-12 font-semibold flex items-center justify-center gap-2"
-                  onClick={() => orderCartOnWhatsApp(cart)}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 h-11 md:h-12 font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
+                  onClick={handleWhatsAppOrder}
+                  disabled={isSavingOrder}
                 >
                   <MessageCircle size={20} />
-                  Order
+                  {isSavingOrder ? "Placing Order…" : "Order on WhatsApp"}
                 </Button>
 
                 <Button

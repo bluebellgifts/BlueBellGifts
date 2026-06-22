@@ -92,6 +92,21 @@ export const useBillCalculations = (initialItems: BillItem[] = []) => {
     );
   }, []);
 
+  // Bulk-update tax rate on all existing items (used by the GST toggle).
+  // When re-enabling GST the caller provides the per-product rate via getRate().
+  const updateAllItemTaxRates = useCallback(
+    (getRate: (item: BillItem) => number) => {
+      setItems((prev) =>
+        prev.map((item) => {
+          const newRate = getRate(item);
+          const taxAmount = calculateTaxAmount(item.subtotal, newRate);
+          return { ...item, taxRate: newRate, taxAmount, total: item.subtotal + taxAmount };
+        }),
+      );
+    },
+    [],
+  );
+
   const updateItemNotes = useCallback((itemId: string, notes: string) => {
     setItems((prev) =>
       prev.map((item) => (item.id === itemId ? { ...item, notes } : item)),
@@ -139,6 +154,7 @@ export const useBillCalculations = (initialItems: BillItem[] = []) => {
     updateItemQuantity,
     updateItemUnitPrice,
     updateItemNotes,
+    updateAllItemTaxRates,
     clearItems,
     addDiscount,
     removeDiscount,

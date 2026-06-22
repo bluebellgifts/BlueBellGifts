@@ -69,6 +69,8 @@ export const GiftsBillingPage: React.FC = () => {
   const [discountValue, setDiscountValue] = useState("");
   const [showDiscountControls, setShowDiscountControls] = useState(false);
   const [billNote, setBillNote] = useState("");
+  // GST is opt-in: starts disabled so tax is never silently added
+  const [gstEnabled, setGstEnabled] = useState(false);
   const [debounceTimer, setDebounceTimer] =
     useState<ReturnType<typeof setTimeout> | null>(null);
   const customerDropdownRef = useRef<HTMLDivElement>(null);
@@ -81,6 +83,7 @@ export const GiftsBillingPage: React.FC = () => {
     removeItem,
     updateItemQuantity,
     updateItemUnitPrice,
+    updateAllItemTaxRates,
     clearItems,
     applyBillDiscount,
   } = useBillCalculations();
@@ -218,7 +221,8 @@ export const GiftsBillingPage: React.FC = () => {
       }
       updateItemQuantity(existing.id, existing.quantity + 1);
     } else {
-      addItem(product.id, product.name, 1, product.price, product.taxRate);
+      // Only apply the product's tax rate when GST is explicitly enabled
+      addItem(product.id, product.name, 1, product.price, gstEnabled ? product.taxRate : 0);
     }
   };
 
@@ -263,6 +267,17 @@ export const GiftsBillingPage: React.FC = () => {
     setDiscountValue("");
     applyBillDiscount(null);
     setShowDiscountControls(false);
+  };
+
+  const handleGstToggle = () => {
+    const enabling = !gstEnabled;
+    setGstEnabled(enabling);
+    if (items.length > 0) {
+      // Retroactively update all bill items so the total stays accurate
+      updateAllItemTaxRates((item) =>
+        enabling ? (productById.get(item.productId)?.taxRate ?? 0) : 0,
+      );
+    }
   };
 
   const handleNewBill = () => {
@@ -367,10 +382,10 @@ export const GiftsBillingPage: React.FC = () => {
       setBillNote("");
       setBillNumber(generateBillNumber());
     } catch (error) {
-      showToast(
-        error instanceof Error ? error.message : "Failed to process payment",
-        "error",
-      );
+      const msg =
+        error instanceof Error ? error.message : "Failed to process bill";
+      console.error("Bill processing error:", error);
+      showToast(msg, "error");
     } finally {
       setIsProcessing(false);
     }
@@ -972,6 +987,28 @@ export const GiftsBillingPage: React.FC = () => {
                   rows={2}
                   className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
                 />
+
+                {/* GST toggle — opt-in so GST is never silently applied */}
+                <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                  <span className="text-sm font-bold text-slate-800">
+                    Apply GST
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleGstToggle}
+                    role="switch"
+                    aria-checked={gstEnabled}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
+                      gstEnabled ? "bg-blue-600" : "bg-slate-300"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+                        gstEnabled ? "translate-x-[18px]" : "translate-x-[3px]"
+                      }`}
+                    />
+                  </button>
+                </div>
 
                 <div className="space-y-2 rounded-xl bg-slate-950 p-4 text-white">
                   <div className="flex justify-between text-sm text-slate-300">

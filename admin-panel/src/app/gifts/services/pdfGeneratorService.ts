@@ -39,10 +39,11 @@ export const generateInvoicePDF = (
 
   yPosition += 8;
   doc.setFontSize(10);
+  // jsPDF does not support emoji (chars outside Latin-1) — use plain text
   const businessDetails = [
-    "📍 123 Gift Street, Mumbai 400001",
-    "📱 +91-98765-43210",
-    "📧 contact@bluebell-gifts.com",
+    "Addr: 123 Gift Street, Mumbai 400001",
+    "Ph: +91-98765-43210",
+    "Email: contact@bluebell-gifts.com",
   ];
 
   businessDetails.forEach((detail) => {
