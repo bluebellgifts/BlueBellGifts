@@ -27,6 +27,30 @@ import {
 } from "../types";
 
 const BILLS_COLLECTION = "gifts-bills";
+
+// Recursively remove every key whose value is `undefined`.
+// Firestore throws "Unsupported field value: undefined" for any undefined
+// buried inside nested objects or arrays, so we must sanitise the whole tree.
+function removeUndefined(value: unknown): unknown {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (value instanceof Timestamp) return value;
+  if (value instanceof Date) return value;
+  if (Array.isArray(value)) {
+    return value
+      .map(removeUndefined)
+      .filter((v) => v !== undefined);
+  }
+  if (typeof value === "object") {
+    const clean: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      const cleaned = removeUndefined(v);
+      if (cleaned !== undefined) clean[k] = cleaned;
+    }
+    return clean;
+  }
+  return value;
+}
 const PRODUCTS_COLLECTION = "gifts-products";
 const CUSTOMERS_COLLECTION = "users"; // Using main users collection
 const MAIN_PRODUCTS_COLLECTION = "products"; // Main products collection
@@ -100,35 +124,30 @@ const mapMainProductToGiftProduct = (
 
 export const saveBillToFirestore = async (bill: Bill): Promise<string> => {
   try {
-    // Build a Firestore-safe copy: convert all Date/undefined fields explicitly.
-    // Firestore throws "Unsupported field value: undefined" if undefined values
-    // reach it via spread (e.g. PaymentDetails.reference when paying by cash).
-    const safePaymentDetails = (bill.paymentDetails ?? []).map((p) => {
-      const entry: Record<string, unknown> = {
-        id: p.id,
-        method: p.method,
-        amount: p.amount,
-        timestamp: Timestamp.fromDate(new Date(p.timestamp)),
-      };
-      if (p.reference !== undefined) entry.reference = p.reference;
-      if (p.transactionId !== undefined) entry.transactionId = p.transactionId;
-      return entry;
-    });
+    // Explicitly convert every Date field to Firestore Timestamp so Firestore
+    // doesn't try to serialise raw JS Date objects inside nested structures.
+    const safePaymentDetails = (bill.paymentDetails ?? []).map((p) => ({
+      id: p.id,
+      method: p.method,
+      amount: p.amount,
+      timestamp: Timestamp.fromDate(new Date(p.timestamp)),
+      // optional strings — included only when they have a value
+      ...(p.reference !== undefined && { reference: p.reference }),
+      ...(p.transactionId !== undefined && { transactionId: p.transactionId }),
+    }));
 
-    const billData: Record<string, unknown> = {
+    const rawBillData = {
       ...bill,
       billDate: Timestamp.fromDate(new Date(bill.billDate)),
-      dueDate: bill.dueDate ? Timestamp.fromDate(new Date(bill.dueDate)) : null,
+      dueDate: bill.dueDate ? Timestamp.fromDate(new Date(bill.dueDate)) : undefined,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
       paymentDetails: safePaymentDetails,
     };
 
-    // Remove top-level optional fields that were not provided
-    for (const key of ["notes", "customerId", "customerDetails", "pdfUrl", "paymentMode"] as const) {
-      if (billData[key] === undefined) delete billData[key];
-    }
-    if (billData.dueDate === null) delete billData.dueDate;
+    // Deep-strip every undefined value (nested discounts, item notes/variants,
+    // customerDetails.email, etc.) before handing data to Firestore.
+    const billData = removeUndefined(rawBillData) as Record<string, unknown>;
 
     const docRef = await addDoc(
       collection(firestore, BILLS_COLLECTION),
@@ -137,6 +156,7 @@ export const saveBillToFirestore = async (bill: Bill): Promise<string> => {
     return docRef.id;
   } catch (error) {
     console.error("Error saving bill to Firestore:", error);
+    // Re-throw the original message so the UI toast is informative
     throw new Error(
       error instanceof Error ? error.message : "Failed to save bill",
     );
@@ -522,18 +542,15 @@ export const updateCustomerInFirestore = async (
 ): Promise<void> => {
   try {
     const customerRef = doc(firestore, CUSTOMERS_COLLECTION, customerId);
-    const updateData: any = {
+    const raw = {
       ...updates,
       updatedAt: Timestamp.now(),
+      ...(updates.lastPurchaseDate
+        ? { lastPurchaseDate: Timestamp.fromDate(new Date(updates.lastPurchaseDate)) }
+        : {}),
     };
-
-    if (updates.lastPurchaseDate) {
-      updateData.lastPurchaseDate = Timestamp.fromDate(
-        new Date(updates.lastPurchaseDate),
-      );
-    }
-
-    await updateDoc(customerRef, updateData);
+    // Strip any undefined values before writing
+    await updateDoc(customerRef, removeUndefined(raw) as Record<string, unknown>);
   } catch (error) {
     console.error("Error updating customer in Firestore:", error);
     throw new Error("Failed to update customer");

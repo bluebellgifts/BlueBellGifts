@@ -19,6 +19,7 @@ interface ProductFormData {
   retailPrice: number | "";
   sellingPrice: number | "";
   offerPrice: number | "";
+  stock: number | "";
   description: string;
   category: string;
   onOffer?: boolean;
@@ -85,6 +86,7 @@ export function AddProductForm({
     retailPrice: "",
     sellingPrice: "",
     offerPrice: "",
+    stock: "",
     description: "",
     category: "",
     onOffer: false,
@@ -120,6 +122,7 @@ export function AddProductForm({
       retailPrice: editingProduct.retailPrice ?? "",
       sellingPrice: editingProduct.sellingPrice ?? "",
       offerPrice: editingProduct.offerPrice ?? "",
+      stock: editingProduct.stock ?? editingProduct.stockQuantity ?? "",
       description: editingProduct.description || "",
       category: editingProduct.category || "",
       onOffer: editingProduct.onOffer || false,
@@ -201,6 +204,10 @@ export function AddProductForm({
       newErrors.sellingPrice = "Selling price is required";
     }
 
+    if (formData.stock === "" || Number(formData.stock) < 0) {
+      newErrors.stock = "Stock quantity is required";
+    }
+
     if (uploadedImages.length === 0) {
       newErrors.images = "At least one image is required";
     }
@@ -219,6 +226,7 @@ export function AddProductForm({
       retailPrice: "",
       sellingPrice: "",
       offerPrice: "",
+      stock: "",
       description: "",
       category: "",
       onOffer: false,
@@ -232,7 +240,8 @@ export function AddProductForm({
     const mrpPrice = Number(formData.retailPrice);
     const sellingPrice = Number(formData.sellingPrice);
     const existing = editingProduct || {};
-    const stock = existing.stock ?? existing.stockQuantity ?? 100;
+    // Use the value the admin typed; fall back to existing only during edits
+    const stock = formData.stock !== "" ? Number(formData.stock) : (existing.stock ?? existing.stockQuantity ?? 0);
 
     const productData: Record<string, unknown> = {
       name,
@@ -251,9 +260,11 @@ export function AddProductForm({
       shippingRestOfIndia: existing.shippingRestOfIndia ?? 0,
       freeShipping: existing.freeShipping ?? false,
       onOffer: formData.onOffer || existing.onOffer || false,
-      offerPrice: formData.offerPrice
-        ? Number(formData.offerPrice)
-        : (existing.offerPrice ?? undefined),
+      // Use the form value; only include the key when a real number is present
+      // so we never write undefined to Firestore
+      ...(formData.offerPrice !== ""
+        ? { offerPrice: Number(formData.offerPrice) }
+        : {}),
       image: imageUrls[0]?.url || existing.image || "",
       images: imageUrls,
       videos: existing.videos || [],
@@ -261,10 +272,6 @@ export function AddProductForm({
       requiredImageFields: existing.requiredImageFields || [],
       customTextFields: existing.customTextFields || [],
     };
-
-    if (existing.offerPrice !== undefined && existing.offerPrice !== "") {
-      productData.offerPrice = existing.offerPrice;
-    }
 
     if (existing.createdAt) {
       productData.createdAt = existing.createdAt;
@@ -425,6 +432,35 @@ export function AddProductForm({
               <p className="text-gray-500 text-xs mt-1">
                 Leave empty if no special offer
               </p>
+            </div>
+
+            <div>
+              <Label className="text-gray-700 font-medium text-sm">
+                Stock Quantity *
+              </Label>
+              <Input
+                type="number"
+                min="0"
+                step="1"
+                value={formData.stock}
+                onChange={(e) =>
+                  handleInputChange(
+                    "stock",
+                    e.target.value !== "" ? Number(e.target.value) : "",
+                  )
+                }
+                placeholder="Enter available stock"
+                className={`mt-2 ${errors.stock ? "border-red-500" : ""}`}
+              />
+              {errors.stock ? (
+                <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" /> {errors.stock}
+                </p>
+              ) : (
+                <p className="text-gray-500 text-xs mt-1">
+                  How many units are currently in stock
+                </p>
+              )}
             </div>
           </div>
 

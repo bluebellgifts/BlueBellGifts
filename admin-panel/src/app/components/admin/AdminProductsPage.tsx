@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Plus, Edit, Trash2, X, Zap } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { Check, Edit, Loader2, Plus, Trash2, X, Zap } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import {
@@ -25,10 +25,14 @@ export function AdminProductsPage() {
   const [togglingDeal, setTogglingDeal] = useState<string | null>(null);
   const rightScrollRef = useRef<HTMLDivElement>(null);
 
-  const filteredProducts = (products || []).filter((product) => {
-    const query = searchQuery.toLowerCase();
-    return product.name?.toLowerCase().includes(query);
-  });
+  // Inline stock editing state
+  const [stockEditId, setStockEditId] = useState<string | null>(null);
+  const [stockEditValue, setStockEditValue] = useState("");
+  const [savingStockId, setSavingStockId] = useState<string | null>(null);
+
+  const filteredProducts = (products || []).filter((product) =>
+    product.name?.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
   const handleDeleteProduct = async (productId: string) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
@@ -58,6 +62,46 @@ export function AdminProductsPage() {
     }
   };
 
+  // ── Inline stock helpers ──────────────────────────────────────────────────
+  const beginStockEdit = (product: any) => {
+    const current = product.stock ?? product.stockQuantity ?? 0;
+    setStockEditId(product.id);
+    setStockEditValue(String(current));
+  };
+
+  const cancelStockEdit = () => {
+    setStockEditId(null);
+    setStockEditValue("");
+  };
+
+  const commitStockEdit = async (productId: string) => {
+    const qty = parseInt(stockEditValue, 10);
+    if (isNaN(qty) || qty < 0) {
+      toast.error("Enter a valid stock quantity (0 or more)");
+      return;
+    }
+    setSavingStockId(productId);
+    try {
+      await updateProduct(productId, { stock: qty, stockQuantity: qty });
+      toast.success("Stock updated");
+      setStockEditId(null);
+      setStockEditValue("");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update stock");
+    } finally {
+      setSavingStockId(null);
+    }
+  };
+
+  const handleStockKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    productId: string,
+  ) => {
+    if (e.key === "Enter") commitStockEdit(productId);
+    if (e.key === "Escape") cancelStockEdit();
+  };
+  // ─────────────────────────────────────────────────────────────────────────
+
   const handleCloseForm = () => {
     setShowAdvancedForm(false);
     setEditingProductId(null);
@@ -69,7 +113,7 @@ export function AdminProductsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Advanced Form Modal */}
+      {/* Add / Edit Product Form */}
       {showAdvancedForm && (
         <div className="w-full bg-white rounded-lg shadow-lg">
           <div className="sticky top-0 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200 p-5 flex items-center justify-between">
@@ -92,6 +136,7 @@ export function AdminProductsPage() {
           </div>
         </div>
       )}
+
       {!showAdvancedForm && (
         <>
           {/* Search Bar */}
@@ -115,60 +160,68 @@ export function AdminProductsPage() {
             </Card>
           </div>
 
-          {/* Two Column Layout: Categories (Left) and Products (Right) */}
           <div className="min-h-[600px]">
-            {/* Products Section */}
-            <div>
-              <div className="flex flex-col gap-4">
-                {/* Header with Add Button */}
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-gray-900">
-                    All Products ({filteredProducts.length})
-                  </h3>
-                  <Button
-                    variant="primary"
-                    onClick={() => setShowAdvancedForm(true)}
-                    className="flex items-center gap-2"
-                  >
-                    <Plus size={18} />
-                    Add Product
-                  </Button>
-                </div>
-
-                {/* Scrollable Products Container */}
-                <div
-                  ref={rightScrollRef}
-                  className="bg-white rounded-lg border border-gray-200 overflow-y-auto max-h-[600px] flex flex-col"
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-gray-900">
+                  All Products ({filteredProducts.length})
+                </h3>
+                <Button
+                  variant="primary"
+                  onClick={() => setShowAdvancedForm(true)}
+                  className="flex items-center gap-2"
                 >
-                  {filteredProducts.length > 0 ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="sticky top-0 bg-gray-50">
-                          <TableHead className="min-w-[150px]">
-                            Product
-                          </TableHead>
-                          <TableHead className="hidden md:table-cell min-w-[100px]">
-                            MRP Price
-                          </TableHead>
-                          <TableHead className="min-w-[100px]">
-                            Selling Price
-                          </TableHead>
-                          <TableHead className="min-w-[80px]">
-                            Stock
-                          </TableHead>
-                          <TableHead className="min-w-[70px]">
-                            Actions
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredProducts.map((product) => (
+                  <Plus size={18} />
+                  Add Product
+                </Button>
+              </div>
+
+              <div
+                ref={rightScrollRef}
+                className="bg-white rounded-lg border border-gray-200 overflow-y-auto max-h-[600px] flex flex-col"
+              >
+                {filteredProducts.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="sticky top-0 bg-gray-50">
+                        <TableHead className="min-w-[150px]">Product</TableHead>
+                        <TableHead className="hidden md:table-cell min-w-[100px]">
+                          MRP Price
+                        </TableHead>
+                        <TableHead className="min-w-[100px]">
+                          Selling Price
+                        </TableHead>
+                        <TableHead className="min-w-[130px]">
+                          Stock{" "}
+                          <span className="text-[10px] font-normal text-gray-400">
+                            (click to edit)
+                          </span>
+                        </TableHead>
+                        <TableHead className="min-w-[70px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredProducts.map((product) => {
+                        const qty =
+                          product.stock ?? product.stockQuantity ?? 0;
+                        const isEditingStock = stockEditId === product.id;
+                        const isSavingStock = savingStockId === product.id;
+
+                        const badgeCls =
+                          qty === 0
+                            ? "bg-red-100 text-red-700 border-red-200"
+                            : qty < 10
+                              ? "bg-amber-100 text-amber-700 border-amber-200"
+                              : "bg-emerald-100 text-emerald-700 border-emerald-200";
+
+                        return (
                           <TableRow key={product.id}>
+                            {/* Product name + image */}
                             <TableCell>
                               <div className="flex items-center gap-2 sm:gap-3">
                                 <img
                                   src={
-                                    product.images && product.images.length > 0
+                                    product.images?.length
                                       ? product.images[0].url
                                       : product.image || ""
                                   }
@@ -180,30 +233,77 @@ export function AdminProductsPage() {
                                 </span>
                               </div>
                             </TableCell>
+
+                            {/* MRP */}
                             <TableCell className="hidden md:table-cell text-xs sm:text-sm font-semibold text-gray-900">
                               ₹{product.retailPrice || 0}
                             </TableCell>
+
+                            {/* Selling price */}
                             <TableCell className="text-xs sm:text-sm font-semibold text-blue-700">
                               ₹{product.sellingPrice || 0}
                             </TableCell>
+
+                            {/* Stock — click badge to edit inline */}
                             <TableCell>
-                              {(() => {
-                                const qty = product.stock ?? product.stockQuantity ?? 0;
-                                const cls =
-                                  qty === 0
-                                    ? "bg-red-100 text-red-700"
-                                    : qty < 10
-                                      ? "bg-amber-100 text-amber-700"
-                                      : "bg-emerald-100 text-emerald-700";
-                                return (
-                                  <span
-                                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls}`}
-                                  >
-                                    {qty === 0 ? "Out" : qty}
-                                  </span>
-                                );
-                              })()}
+                              {isEditingStock ? (
+                                <div className="flex items-center gap-1.5">
+                                  <input
+                                    autoFocus
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    value={stockEditValue}
+                                    onChange={(e) =>
+                                      setStockEditValue(e.target.value)
+                                    }
+                                    onKeyDown={(e) =>
+                                      handleStockKeyDown(e, product.id)
+                                    }
+                                    onBlur={() => commitStockEdit(product.id)}
+                                    className="w-20 rounded-md border border-blue-400 px-2 py-1 text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  />
+                                  {isSavingStock ? (
+                                    <Loader2
+                                      size={14}
+                                      className="animate-spin text-blue-500"
+                                    />
+                                  ) : (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          commitStockEdit(product.id)
+                                        }
+                                        className="rounded p-0.5 text-emerald-600 hover:bg-emerald-50"
+                                        title="Save"
+                                      >
+                                        <Check size={14} />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={cancelStockEdit}
+                                        className="rounded p-0.5 text-red-500 hover:bg-red-50"
+                                        title="Cancel"
+                                      >
+                                        <X size={14} />
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  title="Click to update stock"
+                                  onClick={() => beginStockEdit(product)}
+                                  className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition hover:opacity-80 ${badgeCls}`}
+                                >
+                                  {qty === 0 ? "Out of stock" : `${qty} units`}
+                                </button>
+                              )}
                             </TableCell>
+
+                            {/* Actions */}
                             <TableCell>
                               <div className="flex gap-1 flex-wrap">
                                 <button
@@ -228,6 +328,7 @@ export function AdminProductsPage() {
                                     setShowAdvancedForm(true);
                                   }}
                                   className="p-1.5 sm:p-2 hover:bg-[#eff6ff] text-[#1e40af] rounded-lg transition-colors flex-shrink-0"
+                                  title="Edit product"
                                 >
                                   <Edit size={16} />
                                 </button>
@@ -236,28 +337,29 @@ export function AdminProductsPage() {
                                     handleDeleteProduct(product.id)
                                   }
                                   className="p-1.5 sm:p-2 hover:bg-[#fef2f2] text-[#dc2626] rounded-lg transition-colors flex-shrink-0"
+                                  title="Delete product"
                                 >
                                   <Trash2 size={16} />
                                 </button>
                               </div>
                             </TableCell>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <div className="flex items-center justify-center h-64">
-                      <div className="text-center">
-                        <p className="text-gray-500 font-medium">
-                          No products found
-                        </p>
-                        <p className="text-gray-400 text-sm mt-1">
-                          Try different search terms or add a new product
-                        </p>
-                      </div>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="flex items-center justify-center h-64">
+                    <div className="text-center">
+                      <p className="text-gray-500 font-medium">
+                        No products found
+                      </p>
+                      <p className="text-gray-400 text-sm mt-1">
+                        Try different search terms or add a new product
+                      </p>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
